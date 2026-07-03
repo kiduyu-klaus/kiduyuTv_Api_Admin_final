@@ -1,0 +1,1177 @@
+const express = require('express');
+const path = require('path');
+const fs = require('fs');
+const cors = require('cors');
+const admin = require('firebase-admin');
+
+// ── INITIALISE FIREBASE ADMIN ─────────────────────────────────────
+
+//const serviceAccount = require('/home1/sflatran/keys/serviceAccountKey.json');
+const serviceAccount = require('./serviceAccountKey.json');
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount),
+  databaseURL: 'https://kiduyutvfinal-default-rtdb.firebaseio.com'
+});
+
+// ── FILE LOGGING ─────────────────────────────────────────────────
+
+const LOG_FILE = path.join(__dirname, 'logs.log');
+
+function log(level, message, meta = {}) {
+  const timestamp = new Date().toISOString();
+  const entry = `[${timestamp}] [${level.toUpperCase()}] ${message}${Object.keys(meta).length ? ' ' + JSON.stringify(meta) : ''}\n`;
+  fs.appendFileSync(LOG_FILE, entry);
+  if (level === 'error') console.error(entry.trim());
+  else console.log(entry.trim());
+}
+
+// Ensure log file exists
+if (!fs.existsSync(LOG_FILE)) fs.writeFileSync(LOG_FILE, '');
+
+// ── EXPRESS SETUP ─────────────────────────────────────────────────
+
+const app = express();
+app.use(cors());
+app.use(express.json());
+
+// Serve admin panel at the root — https://sflatransport.com/api/
+
+
+// ── MIDDLEWARE: request logging ───────────────────────────────────
+
+app.use((req, res, next) => {
+  const start = Date.now();
+  res.on('finish', () => {
+    const duration = Date.now() - start;
+    const level = res.statusCode >= 400 ? 'warn' : 'info';
+    log(level, `${req.method} ${req.path} → ${res.statusCode} (${duration}ms)`);
+  });
+  next();
+});
+
+// ── ROUTER ───────────────────────────────────────────────────────
+
+const router = express.Router();
+
+// Health check
+router.get('/health', (req, res) => {
+  log('info', 'Health check');
+  res.json({ status: 'ok', app: 'connectTv', timestamp: Date.now() });
+});
+
+// Main endpoint
+router.post('/connectTv', async (req, res) => {
+  try {
+    const { code, idToken } = req.body;
+    if (!code || !idToken) {
+      log('warn', 'connectTv missing code or idToken', { ip: req.ip });
+      return res.status(400).json({ error: 'Missing code or idToken.' });
+    }
+
+    const decoded = await admin.auth().verifyIdToken(idToken);
+    const phoneUid = decoded.uid;
+    const db = admin.firestore();
+    const docRef = db.collection('tvCodes').doc(code);
+    const snap = await docRef.get();
+
+    if (!snap.exists) {
+      log('warn', 'connectTv invalid code', { code, ip: req.ip });
+      return res.status(404).json({ error: 'Invalid code.' });
+    }
+    const data = snap.data();
+    if (data.status !== 'pending') {
+      log('warn', 'connectTv code already used', { code, ip: req.ip });
+      return res.status(409).json({ error: 'Code already used.' });
+    }
+
+    const createdAt = data.createdAt.toDate();
+    if (Date.now() - createdAt > 5 * 60 * 1000) {
+      log('warn', 'connectTv code expired', { code, ip: req.ip });
+      return res.status(410).json({ error: 'Code expired.' });
+    }
+
+    const customToken = await admin.auth().createCustomToken(phoneUid);
+    await docRef.update({ status: 'linked', customToken, phoneUid });
+
+    log('info', 'connectTv success', { code, phoneUid, adminUid: decoded.uid });
+    return res.json({ success: true });
+  } catch (err) {
+    log('error', err.message, { endpoint: '/api/connectTv', stack: err.stack });
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+// ── ADMIN AUTH ROUTES ────────────────────────────────────────────
+
+// Verify admin ID token and get user info
+router.post('/admin/verify', async (req, res) => {
+  try {
+    const { idToken } = req.body;
+    if (!idToken) {
+      log('warn', 'admin/verify missing idToken', { ip: req.ip });
+      return res.status(400).json({ error: 'Missing idToken.' });
+    }
+
+    const decoded = await admin.auth().verifyIdToken(idToken);
+    const db = admin.firestore();
+    const adminDoc = await db.collection('admins').doc(decoded.uid).get();
+
+    if (!adminDoc.exists) {
+      log('warn', 'admin/verify not an admin', { uid: decoded.uid, email: decoded.email, ip: req.ip });
+      return res.status(403).json({ error: 'Not an admin.' });
+    }
+
+    log('info', 'admin/verify success', { uid: decoded.uid, email: decoded.email });
+    return res.json({
+      success: true,
+      uid: decoded.uid,
+      email: decoded.email,
+      name: decoded.name || decoded.email
+    });
+  } catch (err) {
+    log('error', err.message, { endpoint: '/api/admin/verify', stack: err.stack });
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+// ── ADMIN DATA ROUTES ─────────────────────────────────────────────
+
+// Get all users (limited data for list view)
+router.get('/admin/users', async (req, res) => {
+  try {
+    const { idToken, page = 1, limit = 20, search = '' } = req.query;
+    if (!idToken) {
+      log('warn', 'admin/users missing idToken', { ip: req.ip });
+      return res.status(400).json({ error: 'Missing idToken.' });
+    }
+
+    // Verify admin
+    await admin.auth().verifyIdToken(idToken);
+    const db = admin.firestore();
+    const rtdb = admin.database();
+
+    // Get all users from Auth
+    const listUsersResult = await admin.auth().listUsers(1000);
+    let users = listUsersResult.users.map(u => ({
+      uid: u.uid,
+      email: u.email || 'N/A',
+      displayName: u.displayName || 'Anonymous',
+      photoURL: u.photoURL || null,
+      createdAt: u.metadata.creationTime ? new Date(u.metadata.creationTime).getTime() : null,
+      lastLoginAt: u.metadata.lastRefreshTime ? new Date(u.metadata.lastRefreshTime).getTime() : null
+    }));
+
+    // For each user, try to fetch their Realtime DB data
+    const enrichedUsers = await Promise.all(users.map(async (user) => {
+      try {
+        const snapshot = await rtdb.ref(`users/${user.uid}`).once('value');
+        const userData = snapshot.val() || {};
+        return {
+          ...user,
+          myListCount: userData.myList ? Object.keys(userData.myList).length : 0,
+          watchHistoryCount: userData.watchHistory ? Object.keys(userData.watchHistory).length : 0,
+          savedChannelsCount: userData.savedChannels ? Object.keys(userData.savedChannels).length : 0,
+          savedCastsCount: userData.savedCasts ? Object.keys(userData.savedCasts).length : 0,
+          defaultProvider: userData.defaultProvider || 'Auto',
+          hasData: !!userData.myList
+        };
+      } catch (e) {
+        return { ...user, myListCount: 0, watchHistoryCount: 0, savedChannelsCount: 0, savedCastsCount: 0, hasData: false };
+      }
+    }));
+
+    // Sort by last login (most recent first)
+    enrichedUsers.sort((a, b) => (b.lastLoginAt || 0) - (a.lastLoginAt || 0));
+
+    // Apply search filter
+    let filtered = enrichedUsers;
+    if (search) {
+      const s = search.toLowerCase();
+      filtered = enrichedUsers.filter(u =>
+        (u.email && u.email.toLowerCase().includes(s)) ||
+        (u.displayName && u.displayName.toLowerCase().includes(s)) ||
+        (u.uid && u.uid.toLowerCase().includes(s))
+      );
+    }
+
+    // Paginate
+    const pageNum = parseInt(page);
+    const limitNum = parseInt(limit);
+    const start = (pageNum - 1) * limitNum;
+    const paginated = filtered.slice(start, start + limitNum);
+
+    log('info', 'admin/users listed', { count: filtered.length, page: pageNum, search });
+    return res.json({
+      users: paginated,
+      total: filtered.length,
+      page: pageNum,
+      totalPages: Math.ceil(filtered.length / limitNum)
+    });
+  } catch (err) {
+    log('error', err.message, { endpoint: '/api/admin/users', stack: err.stack });
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+// Get single user full details by UID
+router.get('/admin/users/:uid', async (req, res) => {
+  try {
+    const { idToken } = req.query;
+    const { uid } = req.params;
+
+    if (!idToken) {
+      log('warn', 'admin/users/:uid missing idToken', { uid, ip: req.ip });
+      return res.status(400).json({ error: 'Missing idToken.' });
+    }
+    await admin.auth().verifyIdToken(idToken);
+
+    const db = admin.firestore();
+    const rtdb = admin.database();
+
+    // Get Auth user info
+    let userInfo;
+    try {
+      userInfo = await admin.auth().getUser(uid);
+    } catch (e) {
+      userInfo = null;
+    }
+
+    // Get Realtime DB data
+    const snapshot = await rtdb.ref(`users/${uid}`).once('value');
+    const userData = snapshot.val() || {};
+
+    log('info', 'admin/users/:uid fetched', { uid, hasData: !!userData.myList });
+    return res.json({
+      auth: userInfo ? {
+        uid: userInfo.uid,
+        email: userInfo.email || 'N/A',
+        displayName: userInfo.displayName || 'Anonymous',
+        photoURL: userInfo.photoURL || null,
+        createdAt: userInfo.metadata?.creationTime ? new Date(userInfo.metadata.creationTime).getTime() : null,
+        lastLoginAt: userInfo.metadata?.lastRefreshTime ? new Date(userInfo.metadata.lastRefreshTime).getTime() : null,
+        provider: userInfo.providerData?.[0]?.providerId || 'unknown'
+      } : null,
+      myList: userData.myList || {},
+      watchHistory: userData.watchHistory || {},
+      savedChannels: userData.savedChannels || {},
+      savedCasts: userData.savedCasts || {},
+      savedCompanies: userData.savedCompanies || {},
+      savedNetworks: userData.savedNetworks || {},
+      preferences: {
+        defaultProvider: userData.defaultProvider || 'Auto'
+      }
+    });
+  } catch (err) {
+    log('error', err.message, { endpoint: `/api/admin/users/${req.params.uid}`, stack: err.stack });
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+// Get analytics stats
+router.get('/admin/analytics', async (req, res) => {
+  try {
+    const { idToken } = req.query;
+    if (!idToken) {
+      log('warn', 'admin/analytics missing idToken', { ip: req.ip });
+      return res.status(400).json({ error: 'Missing idToken.' });
+    }
+
+    await admin.auth().verifyIdToken(idToken);
+    const rtdb = admin.database();
+
+    // List all users
+    const listUsersResult = await admin.auth().listUsers(1000);
+    const totalUsers = listUsersResult.users.length;
+
+    // Calculate stats from all users' data
+    let stats = {
+      totalUsers,
+      usersWithMyList: 0,
+      usersWithWatchHistory: 0,
+      totalMyListItems: 0,
+      totalWatchHistoryItems: 0,
+      topMyListMovies: [],
+      topMyListTvShows: [],
+      topSavedCasts: [],
+      providerDistribution: { Auto: 0 },
+      topWatchedMovies: [],
+      topWatchedTvShows: []
+    };
+
+    // Counts keyed by tmdbId, each entry tracks { title, count } so the UI
+    // can show "The Dark Knight" instead of "TMDB #155".
+    const movieCounts = {};
+    const tvCounts = {};
+    const castCounts = {};
+    const providerCounts = {};
+
+    const bump = (bucket, id, title) => {
+      const key = String(id);
+      if (!bucket[key]) bucket[key] = { title: title || null, count: 0 };
+      else if (title && !bucket[key].title) bucket[key].title = title;
+      bucket[key].count += 1;
+    };
+
+    await Promise.all(listUsersResult.users.map(async (user) => {
+      try {
+        const snapshot = await rtdb.ref(`users/${user.uid}`).once('value');
+        const data = snapshot.val() || {};
+
+        if (data.defaultProvider) {
+          providerCounts[data.defaultProvider] = (providerCounts[data.defaultProvider] || 0) + 1;
+        }
+
+        if (data.myList) {
+          stats.usersWithMyList++;
+          const entries = Object.values(data.myList);
+          stats.totalMyListItems += entries.length;
+          entries.forEach(item => {
+            if (!item.isTv) bump(movieCounts, item.tmdbId, item.title);
+            else bump(tvCounts, item.tmdbId, item.title || item.name);
+          });
+        }
+
+        if (data.watchHistory) {
+          stats.usersWithWatchHistory++;
+          const wh = data.watchHistory;
+          const movies = wh.movies || wh;
+          const tvs = wh.tvShows || {};
+          Object.values(movies).forEach(item => {
+            bump(movieCounts, item.tmdbId, item.title);
+          });
+          Object.values(tvs).forEach(item => {
+            bump(tvCounts, item.tmdbId, item.title || item.name);
+          });
+        }
+
+        if (data.savedCasts) {
+          Object.values(data.savedCasts).forEach(cast => {
+            castCounts[cast.name] = (castCounts[cast.name] || 0) + 1;
+          });
+        }
+      } catch (e) { }
+    }));
+
+    // Convert counts to sorted arrays
+    const toTopList = (bucket) =>
+      Object.entries(bucket)
+        .sort((a, b) => b[1].count - a[1].count)
+        .slice(0, 10)
+        .map(([id, { title, count }]) => ({ tmdbId: parseInt(id), title, count }));
+
+    stats.topMyListMovies = toTopList(movieCounts);
+    stats.topMyListTvShows = toTopList(tvCounts);
+    stats.topSavedCasts = Object.entries(castCounts).sort((a, b) => b[1] - a[1]).slice(0, 10).map(([name, count]) => ({ name, count }));
+    stats.providerDistribution = providerCounts;
+    stats.topWatchedMovies = stats.topMyListMovies;
+    stats.topWatchedTvShows = stats.topMyListTvShows;
+
+    log('info', 'admin/analytics computed', { totalUsers });
+    return res.json(stats);
+  } catch (err) {
+    log('error', err.message, { endpoint: '/api/admin/analytics', stack: err.stack });
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+// Delete user data from Realtime DB (not auth account)
+router.delete('/admin/users/:uid/data', async (req, res) => {
+  try {
+    const { idToken } = req.body;
+    const { uid } = req.params;
+
+    if (!idToken) {
+      log('warn', 'admin/users/:uid/data DELETE missing idToken', { uid, ip: req.ip });
+      return res.status(400).json({ error: 'Missing idToken.' });
+    }
+    await admin.auth().verifyIdToken(idToken);
+    const rtdb = admin.database();
+
+    await rtdb.ref(`users/${uid}`).remove();
+    log('info', 'admin/users/:uid/data deleted', { uid });
+    return res.json({ success: true, message: 'User data deleted.' });
+  } catch (err) {
+    log('error', err.message, { endpoint: `/api/admin/users/${req.params.uid}/data`, stack: err.stack });
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+// Get TV schedule data
+router.get('/admin/schedule', async (req, res) => {
+  try {
+    const { idToken } = req.query;
+    if (!idToken) {
+      log('warn', 'admin/schedule missing idToken', { ip: req.ip });
+      return res.status(400).json({ error: 'Missing idToken.' });
+    }
+
+    await admin.auth().verifyIdToken(idToken);
+    const rtdb = admin.database();
+    const snapshot = await rtdb.ref('schedule').once('value');
+    const scheduleData = snapshot.val() || {};
+
+    log('info', 'admin/schedule fetched');
+    return res.json(scheduleData);
+  } catch (err) {
+    log('error', err.message, { endpoint: '/api/admin/schedule', stack: err.stack });
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+// ── APP CONFIG ROUTES ─────────────────────────────────────────────
+
+// Default values — used to initialise a section when its RTDB node is empty.
+// Existing values are NEVER overwritten by defaults; they are only applied
+// when the section has never been written.
+// ── STREAM PROVIDERS ────────────────────────────────────────────────
+// Each provider is stored at:
+//   app_config/stream_providers_Configuration/<provider_name>
+//
+// Fields: stream_provider_name, url, enabled,
+//         movie_url_template, tv_url_template,
+//         iframe_attributes (map), allow_attributes (string),
+//         movie_parameters (map), tv_parameters (map),
+//         createdAt
+
+const PROVIDER_DEFAULTS = {
+  Videasy: {
+    stream_provider_name: 'Videasy', url: 'https://player.videasy.net', enabled: true,
+    movie_url_template: 'https://player.videasy.net/movie/%d',
+    tv_url_template: 'https://player.videasy.net/tv/%d/%d/%d',
+    iframe_attributes: { frameborder: '0', allow: 'encrypted-media' },
+    allow_attributes: '',
+    movie_parameters: { overlay: 'true', color: '8B5CF6' },
+    tv_parameters: { nextEpisode: 'true', autoplayNextEpisode: 'true', episodeSelector: 'true', overlay: 'true', color: '8B5CF6' },
+    createdAt: null
+  },
+  Vidrock: {
+    stream_provider_name: 'Vidrock', url: 'https://vidrock.net', enabled: true,
+    movie_url_template: 'https://vidrock.net/movie/%d',
+    tv_url_template: 'https://vidrock.net/tv/%d/%d/%d',
+    iframe_attributes: {},
+    allow_attributes: '',
+    movie_parameters: { autoplay: 'true' },
+    tv_parameters: { autoplay: 'true', autonext: 'true' },
+    createdAt: null
+  },
+  VidLink: {
+    stream_provider_name: 'VidLink', url: 'https://vidlink.pro', enabled: true,
+    movie_url_template: 'https://vidlink.pro/movie/%d',
+    tv_url_template: 'https://vidlink.pro/tv/%d/%d/%d',
+    iframe_attributes: { frameborder: '0' },
+    allow_attributes: '',
+    movie_parameters: { autoPlay: 'true' },
+    tv_parameters: { autoPlay: 'true' },
+    createdAt: null
+  },
+  VidFast: {
+    stream_provider_name: 'VidFast', url: 'https://vidfast.pro', enabled: true,
+    movie_url_template: 'https://vidfast.pro/movie/%d',
+    tv_url_template: 'https://vidfast.pro/tv/%d/%d/%d',
+    iframe_attributes: {},
+    allow_attributes: '',
+    movie_parameters: { autoPlay: 'true', theme: '9B59B6' },
+    tv_parameters: { autoPlay: 'true', nextButton: 'true', autoNext: 'true', theme: '9B59B6' },
+    createdAt: null
+  },
+  VidKing: {
+    stream_provider_name: 'VidKing', url: 'https://www.vidking.net', enabled: true,
+    movie_url_template: 'https://www.vidking.net/embed/movie/%d',
+    tv_url_template: 'https://www.vidking.net/embed/tv/%d/%d/%d',
+    iframe_attributes: {},
+    allow_attributes: '',
+    movie_parameters: { autoPlay: 'true' },
+    tv_parameters: { autoPlay: 'true', nextEpisode: 'true', episodeSelector: 'true' },
+    createdAt: null
+  },
+  VidNest: {
+    stream_provider_name: 'VidNest', url: 'https://vidnest.fun', enabled: true,
+    movie_url_template: 'https://vidnest.fun/movie/%d',
+    tv_url_template: 'https://vidnest.fun/tv/%d/%d/%d',
+    iframe_attributes: { scrolling: 'no', frameBorder: '0' },
+    allow_attributes: '',
+    movie_parameters: { servericon: 'show', bottomcaption: 'true', timeslider: '1' },
+    tv_parameters: {},
+    createdAt: null
+  },
+  VidUp: {
+    stream_provider_name: 'VidUp', url: 'https://vidup.to', enabled: true,
+    movie_url_template: 'https://vidup.to/movie/%d',
+    tv_url_template: 'https://vidup.to/tv/%d/%d/%d',
+    iframe_attributes: {},
+    allow_attributes: '',
+    movie_parameters: { autoPlay: 'true' },
+    tv_parameters: { autoPlay: 'true' },
+    createdAt: null
+  },
+  Flixer: {
+    stream_provider_name: 'Flixer', url: 'https://flixer.su', enabled: true,
+    movie_url_template: 'https://flixer.su/watch/movie/%d',
+    tv_url_template: 'https://flixer.su/watch/tv/%d/%d/%d',
+    iframe_attributes: {},
+    allow_attributes: '',
+    movie_parameters: {},
+    tv_parameters: {},
+    createdAt: null
+  },
+  VidCore: {
+    stream_provider_name: 'VidCore', url: 'https://vidcore.net', enabled: true,
+    movie_url_template: 'https://vidcore.net/movie/%d',
+    tv_url_template: 'https://vidcore.net/tv/%d/%d/%d',
+    iframe_attributes: {},
+    allow_attributes: '',
+    movie_parameters: { autoPlay: 'true', sub: 'en' },
+    tv_parameters: { autoPlay: 'true', nextButton: 'true', autoNext: 'true' },
+    createdAt: null
+  },
+  Peachify: {
+    stream_provider_name: 'Peachify', url: 'https://peachify.top', enabled: true,
+    movie_url_template: 'https://peachify.top/embed/movie/%d',
+    tv_url_template: 'https://peachify.top/embed/tv/%d/%d/%d',
+    iframe_attributes: {},
+    allow_attributes: '',
+    movie_parameters: { sub: 'English' },
+    tv_parameters: { sub: 'English', autoNext: '30' },
+    createdAt: null
+  },
+  VidAPI: {
+    stream_provider_name: 'VidAPI', url: 'https://vaplayer.ru', enabled: true,
+    movie_url_template: 'https://vaplayer.ru/embed/movie/%d',
+    tv_url_template: 'https://vaplayer.ru/embed/tv/%d/%d/%d',
+    iframe_attributes: {},
+    allow_attributes: '',
+    movie_parameters: { autoplay: '1', overlay: 'true' },
+    tv_parameters: { autoplay: '1', overlay: 'true' },
+    createdAt: null
+  },
+  VidPlus: {
+    stream_provider_name: 'VidPlus', url: 'https://player.vidplus.to', enabled: true,
+    movie_url_template: 'https://player.vidplus.to/embed/movie/%d',
+    tv_url_template: 'https://player.vidplus.to/embed/tv/%d/%d/%d',
+    iframe_attributes: {},
+    allow_attributes: '',
+    movie_parameters: { autoplay: 'true', autoNext: 'true', nextButton: 'true', poster: 'true', title: 'true', episodelist: 'true', servericon: 'true' },
+    tv_parameters: { autoplay: 'true', autoNext: 'true', poster: 'true', title: 'true', servericon: 'true' },
+    createdAt: null
+  },
+  CineSrc: {
+    stream_provider_name: 'CineSrc', url: 'https://cinesrc.st', enabled: true,
+    movie_url_template: 'https://cinesrc.st/embed/movie/%d',
+    tv_url_template: 'https://cinesrc.st/embed/tv/%d?s=%d&e=%d',
+    iframe_attributes: {},
+    allow_attributes: '',
+    movie_parameters: { autoplay: 'true', quality: '1080' },
+    tv_parameters: { color: 'FF1493', autoplay: 'true', autonext: 'true' },
+    createdAt: null
+  },
+  Vidzen: {
+    stream_provider_name: 'Vidzen', url: 'https://vidzen.fun', enabled: true,
+    movie_url_template: 'https://vidzen.fun/movie/%d',
+    tv_url_template: 'https://vidzen.fun/tv/%d/%d/%d',
+    iframe_attributes: {},
+    allow_attributes: '',
+    movie_parameters: { autoplay: 'true' },
+    tv_parameters: { autoplay: 'true' },
+    createdAt: null
+  },
+  Cinemaos: {
+    stream_provider_name: 'Cinemaos', url: 'https://cinemaos.tech', enabled: true,
+    movie_url_template: 'https://cinemaos.tech/player/%d',
+    tv_url_template: 'https://cinemaos.tech/player/%d/%d/%d',
+    iframe_attributes: {},
+    allow_attributes: '',
+    movie_parameters: { autoplay: 'true' },
+    tv_parameters: { autoplay: 'true' },
+    createdAt: null
+  },
+  Amri: {
+    stream_provider_name: 'Amri', url: 'https://amri.gg', enabled: true,
+    movie_url_template: 'https://amri.gg/movie/%d',
+    tv_url_template: 'https://amri.gg/tv/%d/%d/%d',
+    iframe_attributes: {},
+    allow_attributes: '',
+    movie_parameters: { autoplay: 'true' },
+    tv_parameters: { autoplay: 'true' },
+    createdAt: null
+  },
+  Zxc: {
+    stream_provider_name: 'Zxc', url: 'https://zxcstream.xyz', enabled: true,
+    movie_url_template: 'https://zxcstream.xyz/embed/movie/%d',
+    tv_url_template: 'https://zxcstream.xyz/embed/tv/%d/%d/%d',
+    iframe_attributes: {},
+    allow_attributes: '',
+    movie_parameters: { autoplay: 'true' },
+    tv_parameters: { autoplay: 'true' },
+    createdAt: null
+  },
+  Vlux: {
+    stream_provider_name: 'Vlux', url: 'https://vidlux.xyz', enabled: true,
+    movie_url_template: 'https://vidlux.xyz/embed/movie/%d',
+    tv_url_template: 'https://vidlux.xyz/embed/tv/%d/%d/%d',
+    iframe_attributes: {},
+    allow_attributes: '',
+    movie_parameters: { autoplay: 'true' },
+    tv_parameters: { autoplay: 'true' },
+    createdAt: null
+  },
+  'VidSrc (WTF) v4': {
+    stream_provider_name: 'VidSrc (WTF) v4', url: 'https://vidsrc.wtf', enabled: true,
+    movie_url_template: 'https://vidsrc.wtf/api/4/movie/?id=%d',
+    tv_url_template: 'https://vidsrc.wtf/api/4/tv/?id=%d&s=%d&e=%d',
+    iframe_attributes: {},
+    allow_attributes: '',
+    movie_parameters: {},
+    tv_parameters: {},
+    createdAt: null
+  },
+  PrimeSrc: {
+    stream_provider_name: 'PrimeSrc', url: 'https://primesrc.me', enabled: true,
+    movie_url_template: 'https://primesrc.me/embed/movie?tmdb=%d',
+    tv_url_template: 'https://primesrc.me/embed/tv?tmdb=%d&season=%d&episode=%d',
+    iframe_attributes: {},
+    allow_attributes: '',
+    movie_parameters: {},
+    tv_parameters: {},
+    createdAt: null
+  },
+  'VidSrc (WTF) v3': {
+    stream_provider_name: 'VidSrc (WTF) v3', url: 'https://vidsrc.wtf', enabled: true,
+    movie_url_template: 'https://vidsrc.wtf/api/3/movie/?id=%d',
+    tv_url_template: 'https://vidsrc.wtf/api/3/tv/?id=%d&s=%d&e=%d',
+    iframe_attributes: {},
+    allow_attributes: '',
+    movie_parameters: {},
+    tv_parameters: {},
+    createdAt: null
+  },
+  VidZee: {
+    stream_provider_name: 'VidZee', url: 'https://player.vidzee.wtf', enabled: true,
+    movie_url_template: 'https://player.vidzee.wtf/v2/embed/movie/%d',
+    tv_url_template: 'https://player.vidzee.wtf/v2/embed/tv/%d/%d/%d',
+    iframe_attributes: {},
+    allow_attributes: '',
+    movie_parameters: {},
+    tv_parameters: {},
+    createdAt: null
+  },
+  Lordflix: {
+    stream_provider_name: 'Lordflix', url: 'https://lordflix.org', enabled: true,
+    movie_url_template: 'https://lordflix.org/watch/movie/%d',
+    tv_url_template: 'https://lordflix.org/watch/tv/%d/%d/%d',
+    iframe_attributes: {},
+    allow_attributes: '',
+    movie_parameters: {},
+    tv_parameters: {},
+    createdAt: null
+  },
+  Mapple: {
+    stream_provider_name: 'Mapple', url: 'https://mapple.uk', enabled: true,
+    movie_url_template: 'https://mapple.uk/watch/movie/%d',
+    tv_url_template: 'https://mapple.uk/watch/tv/%d-%d-%d',
+    iframe_attributes: {},
+    allow_attributes: '',
+    movie_parameters: {},
+    tv_parameters: {},
+    createdAt: null
+  },
+  Smashystream: {
+    stream_provider_name: 'Smashystream', url: 'https://embed.smashystream.com', enabled: true,
+    movie_url_template: 'https://embed.smashystream.com/playere.php?tmdb=%d',
+    tv_url_template: 'https://embed.smashystream.com/playere.php?tmdb=%d&season=%d&episode=%d',
+    iframe_attributes: { frameborder: '0' },
+    allow_attributes: '',
+    movie_parameters: {},
+    tv_parameters: {},
+    createdAt: null
+  },
+  '111Movies': {
+    stream_provider_name: '111Movies', url: 'https://111movies.com', enabled: true,
+    movie_url_template: 'https://111movies.com/movie/%d',
+    tv_url_template: 'https://111movies.com/tv/%d/%d/%d',
+    iframe_attributes: { frameborder: '0' },
+    allow_attributes: '',
+    movie_parameters: {},
+    tv_parameters: {},
+    createdAt: null
+  },
+  Autoembed: {
+    stream_provider_name: 'Autoembed', url: 'https://autoembed.co', enabled: true,
+    movie_url_template: 'https://autoembed.co/movie/tmdb/%d',
+    tv_url_template: 'https://autoembed.co/tv/tmdb/%d-%d-%d',
+    iframe_attributes: {},
+    allow_attributes: '',
+    movie_parameters: {},
+    tv_parameters: {},
+    createdAt: null
+  },
+  EmbedMaster: {
+    stream_provider_name: 'EmbedMaster', url: 'https://embedmaster.link', enabled: true,
+    movie_url_template: 'https://embedmaster.link/movie/%d',
+    tv_url_template: 'https://embedmaster.link/tv/%d/%d/%d',
+    iframe_attributes: {},
+    allow_attributes: '',
+    movie_parameters: { autoPlay: 'true' },
+    tv_parameters: { autoPlay: 'true', nextButton: 'true', autoNext: 'true' },
+    createdAt: null
+  },
+  Vidsync: {
+    stream_provider_name: 'Vidsync', url: 'https://vidsync.xyz', enabled: true,
+    movie_url_template: 'https://vidsync.xyz/embed/movie/%d',
+    tv_url_template: 'https://vidsync.xyz/embed/tv/%d/%d/%d',
+    iframe_attributes: {},
+    allow_attributes: '',
+    movie_parameters: { autoPlay: 'true' },
+    tv_parameters: { autoPlay: 'true', autoNext: 'true' },
+    createdAt: null
+  },
+  'VidSrc (WTF) v1': {
+    stream_provider_name: 'VidSrc (WTF) v1', url: 'https://vidsrc.wtf', enabled: true,
+    movie_url_template: 'https://vidsrc.wtf/api/1/movie/?id=%d',
+    tv_url_template: 'https://vidsrc.wtf/api/1/tv/?id=%d&s=%d&e=%d',
+    iframe_attributes: {},
+    allow_attributes: '',
+    movie_parameters: {},
+    tv_parameters: {},
+    createdAt: null
+  }
+};
+
+const PROVIDERS_RTDB_PATH = 'app_config/stream_providers_Configuration';
+
+async function initProviders(rtdb) {
+  const ref = rtdb.ref(PROVIDERS_RTDB_PATH);
+  const snap = await ref.once('value');
+  const existing = snap.val() || {};
+
+  let updated = false;
+  const now = new Date().toISOString();
+
+  for (const [name, defaults] of Object.entries(PROVIDER_DEFAULTS)) {
+    if (!existing[name]) {
+      existing[name] = { ...defaults, createdAt: now };
+      updated = true;
+    } else {
+      // Merge in any new fields that didn't exist on this provider
+      const existingProvider = existing[name];
+      for (const [key, val] of Object.entries(defaults)) {
+        if (existingProvider[key] === undefined || existingProvider[key] === null) {
+          existingProvider[key] = val;
+          updated = true;
+        }
+      }
+    }
+  }
+
+  if (updated) {
+    await ref.set(existing);
+    log('info', 'providers updated with missing/default fields');
+  }
+  return existing;
+}
+
+function sanitizeProviderPayload(body) {
+  function safeMap(val) {
+    if (typeof val === 'object' && val !== null && !Array.isArray(val)) return val;
+    if (typeof val === 'string') {
+      try { return JSON.parse(val); } catch (_) { return {}; }
+    }
+    return {};
+  }
+  return {
+    stream_provider_name:  typeof body.stream_provider_name === 'string' ? body.stream_provider_name.trim()  : '',
+    url:                  typeof body.url                  === 'string' ? body.url.trim()                  : '',
+    enabled:              body.enabled === true || body.enabled === 'true' || body.enabled === 1 || body.enabled === '1',
+    movie_url_template:   typeof body.movie_url_template   === 'string' ? body.movie_url_template.trim()   : '',
+    tv_url_template:     typeof body.tv_url_template      === 'string' ? body.tv_url_template.trim()      : '',
+    iframe_attributes:    safeMap(body.iframe_attributes),
+    allow_attributes:    typeof body.allow_attributes === 'string' ? body.allow_attributes.trim() : '',
+    movie_parameters:    safeMap(body.movie_parameters),
+    tv_parameters:       safeMap(body.tv_parameters)
+  };
+}
+
+// GET /api/admin/providers — fetch all providers (init with defaults if empty)
+router.get('/admin/providers', async (req, res) => {
+  try {
+    const { idToken } = req.query;
+    if (!idToken) {
+      log('warn', 'admin/providers GET missing idToken', { ip: req.ip });
+      return res.status(400).json({ error: 'Missing idToken.' });
+    }
+    await admin.auth().verifyIdToken(idToken);
+    const rtdb = admin.database();
+    const providers = await initProviders(rtdb);
+    log('info', 'admin/providers fetched');
+    return res.json(providers);
+  } catch (err) {
+    log('error', err.message, { endpoint: '/api/admin/providers', stack: err.stack });
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+// PUT /api/admin/providers/<name> — create or update a single provider
+router.put('/admin/providers/:name', async (req, res) => {
+  try {
+    const { idToken } = req.body;
+    const providerName = req.params.name.trim();
+    if (!idToken) {
+      log('warn', 'admin/providers PUT missing idToken', { ip: req.ip, name: providerName });
+      return res.status(400).json({ error: 'Missing idToken.' });
+    }
+    if (!providerName) {
+      return res.status(400).json({ error: 'Provider name is required.' });
+    }
+    await admin.auth().verifyIdToken(idToken);
+    const rtdb = admin.database();
+
+    // Get existing to preserve createdAt
+    const existingSnap = await rtdb.ref(`${PROVIDERS_RTDB_PATH}/${providerName}`).once('value');
+    const existing = existingSnap.val() || {};
+    const existingCreatedAt = existing.createdAt || new Date().toISOString();
+
+    const payload = sanitizeProviderPayload(req.body);
+    payload.stream_provider_name = payload.stream_provider_name || providerName;
+    payload.createdAt = existingCreatedAt;
+
+    await rtdb.ref(`${PROVIDERS_RTDB_PATH}/${providerName}`).set(payload);
+    log('info', 'admin/providers updated', { name: providerName });
+    return res.json({ success: true, ...payload });
+  } catch (err) {
+    log('error', err.message, { endpoint: `/api/admin/providers/${req.params.name}`, stack: err.stack });
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+// DELETE /api/admin/providers/<name> — remove a single provider
+router.delete('/admin/providers/:name', async (req, res) => {
+  try {
+    const { idToken } = req.body;
+    const providerName = req.params.name.trim();
+    if (!idToken) {
+      log('warn', 'admin/providers DELETE missing idToken', { ip: req.ip, name: providerName });
+      return res.status(400).json({ error: 'Missing idToken.' });
+    }
+    await admin.auth().verifyIdToken(idToken);
+    const rtdb = admin.database();
+    await rtdb.ref(`${PROVIDERS_RTDB_PATH}/${providerName}`).remove();
+    log('info', 'admin/providers deleted', { name: providerName });
+    return res.json({ success: true });
+  } catch (err) {
+    log('error', err.message, { endpoint: `/api/admin/providers/${req.params.name}`, stack: err.stack });
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+// ── APP CONFIG ROUTES ──────────────────────────────────────────────
+
+// Default values — used to initialise a section when its RTDB node is empty.
+// Existing values are NEVER overwritten by defaults; they are only applied
+// when the section has never been written.
+const CONFIG_DEFAULTS = {
+  streaming: {
+    playlist_url: 'https://raw.githubusercontent.com/abusaeeidx/IPTV-Scraper-Zilla/main/combined-playlist.m3u',
+    playlist_epg: 'https://raw.githubusercontent.com/JulioCesarXY/EPG-LG-Channels/refs/heads/main/lg_epg_us.xml',
+    schedule_api: 'https://dlhd.pk',
+    playlist_cache_duration: 6,         // hours
+    createdAt: null
+  },
+  api: {
+    tmdb_bearer_token: '',
+    trakt_client_id: '',
+    trakt_client_secret: ''
+  },
+  ads: {
+    enable_test_ads: false,
+    use_test_ads: false,                 // alias for enable_test_ads (app-side)
+    phone_banner_ad_unit_id: '',
+    phone_interstitial_ad_unit_id: '',
+    phone_rewarded_ad_unit_id: '',
+    tv_banner_ad_unit_id: '',
+    tv_interstitial_ad_unit_id: ''
+  },
+  filters: {
+    enable_custom_filters: false,
+    easylist_url: 'https://easylist.to/easylist/easylist.txt',
+    easyprivacy_url: 'https://easylist.to/easylist/easyprivacy.txt',
+    custom_filters_url: 'https://raw.githubusercontent.com/hagezi/dns-blocklists/main/adblock/native.oppo-realme.txt',
+    update_interval_hours: 24,
+    filter_timeout_ms: 30000,
+    filter_fallback_easylist: 'https://easylist-downloads.adblockplus.org/easylist.txt',
+    filter_fallback_easyprivacy: 'https://easylist-downloads.adblockplus.org/easyprivacy.txt'
+  },
+  network: {
+    api_cache_size_mb: 10,               // MB
+    cache_max_age_minutes: 5,
+    cache_max_stale_days: 7,
+    api_timeout_seconds: 30,
+    max_retries: 3,
+    retry_delay_ms: 3000
+  },
+  features: {
+    disable_ads_globally: false,
+    cursor_speed: 50,
+    cursor_hide_delay_ms: 5000
+  },
+  app_packagenames: {
+    app_type_phone: 'com.kiduyuk.klausk.kiduyutv.phone',
+    app_type_tv: 'com.kiduyuk.klausk.kiduyutv.tv'
+  },
+  home_dialog: {
+    dialog_message: 'Welcome to Kiduyu TV! Enjoy your streaming experience.'
+  }
+};
+
+// Whitelisted config sections — maps an admin-URL slug to an RTDB path
+// and the set of fields the section owns. Unknown fields in the request body
+// are silently dropped. Fields can be tagged with a `type` to control coercion:
+// 'boolean' / 'number' / 'providerList' / default (string).
+const CONFIG_SECTIONS = {
+  streaming: {
+    rtdbPath: 'app_config/playlist_url',
+    fields: [
+      { name: 'playlist_url' },
+      { name: 'playlist_epg' },
+      { name: 'schedule_api' },
+      { name: 'playlist_cache_duration', type: 'number' }
+    ],
+    preserveCreatedAt: true
+  },
+  api: {
+    rtdbPath: 'app_config/api_Configuration',
+    fields: [
+      { name: 'tmdb_bearer_token' },
+      { name: 'trakt_client_id' },
+      { name: 'trakt_client_secret' }
+    ]
+  },
+  ads: {
+    rtdbPath: 'app_config/google_ads_Configuration',
+    fields: [
+      { name: 'enable_test_ads', type: 'boolean' },
+      { name: 'use_test_ads',   type: 'boolean' },
+      { name: 'phone_banner_ad_unit_id' },
+      { name: 'phone_interstitial_ad_unit_id' },
+      { name: 'phone_rewarded_ad_unit_id' },
+      { name: 'tv_banner_ad_unit_id' },
+      { name: 'tv_interstitial_ad_unit_id' }
+    ]
+  },
+  filters: {
+    rtdbPath: 'app_config/filter_lists_Configuration',
+    fields: [
+      { name: 'enable_custom_filters',     type: 'boolean' },
+      { name: 'easylist_url' },
+      { name: 'easyprivacy_url' },
+      { name: 'custom_filters_url' },
+      { name: 'update_interval_hours',     type: 'number' },
+      { name: 'filter_timeout_ms',         type: 'number' },
+      { name: 'filter_fallback_easylist' },
+      { name: 'filter_fallback_easyprivacy' }
+    ]
+  },
+  network: {
+    rtdbPath: 'app_config/network_settings_Configuration',
+    fields: [
+      { name: 'api_cache_size_mb',       type: 'number' },
+      { name: 'cache_max_age_minutes',   type: 'number' },
+      { name: 'cache_max_stale_days',    type: 'number' },
+      { name: 'api_timeout_seconds',     type: 'number' },
+      { name: 'max_retries',             type: 'number' },
+      { name: 'retry_delay_ms',          type: 'number' }
+    ]
+  },
+  features: {
+    rtdbPath: 'app_config/feature_flags_Configuration',
+    fields: [
+      { name: 'disable_ads_globally',  type: 'boolean' },
+      { name: 'cursor_speed',           type: 'number' },
+      { name: 'cursor_hide_delay_ms',   type: 'number' }
+    ]
+  },
+  app_packagenames: {
+    rtdbPath: 'app_config/app_packagenames',
+    fields: [
+      { name: 'app_type_phone' },
+      { name: 'app_type_tv' }
+    ]
+  },
+  home_dialog: {
+    rtdbPath: 'app_config/home_dialog',
+    fields: [
+      { name: 'dialog_message' }
+    ]
+  }
+};
+
+function getConfigSection(slug) {
+  return CONFIG_SECTIONS[slug];
+}
+
+function sanitizeConfigField(field, raw) {
+  if (raw === undefined || raw === null) return undefined;
+  switch (field.type) {
+    case 'boolean':
+      return raw === true || raw === 'true' || raw === 1 || raw === '1';
+    case 'number': {
+      const n = Number(raw);
+      return Number.isFinite(n) ? n : 0;
+    }
+    case 'providerList': {
+      if (!Array.isArray(raw)) return [];
+      return raw
+        .filter(p => p && typeof p === 'object' && typeof p.name === 'string' && p.name.trim())
+        .map(p => ({
+          name:       p.name.trim(),
+          url:        typeof p.url === 'string' ? p.url.trim() : '',
+          enabled:    p.enabled === true || p.enabled === 'true' || p.enabled === 1 || p.enabled === '1',
+          movie_url_template: typeof p.movie_url_template === 'string' ? p.movie_url_template.trim() : '',
+          tv_url_template:    typeof p.tv_url_template    === 'string' ? p.tv_url_template.trim()    : ''
+        }));
+    }
+    default:
+      if (typeof raw === 'string') return raw.trim();
+      return String(raw);
+  }
+}
+
+// Merges defaults into existing data without overwriting any existing keys.
+// Used to initialise a config section when it doesn't exist in RTDB.
+function mergeDefaults(existing, defaults) {
+  if (!existing || typeof existing !== 'object') return { ...defaults };
+  const merged = {};
+  for (const key of Object.keys(defaults)) {
+    if (existing[key] !== undefined && existing[key] !== null && existing[key] !== '') {
+      merged[key] = existing[key];
+    } else {
+      merged[key] = defaults[key];
+    }
+  }
+  return merged;
+}
+
+// Initialise a config section in RTDB with defaults if the node is empty.
+// Returns the merged data (existing values preserved, missing filled in).
+async function initConfigSection(rtdb, sectionDef, slug) {
+  const ref = rtdb.ref(sectionDef.rtdbPath);
+  const snap = await ref.once('value');
+  const existing = snap.val();
+  const defaults = CONFIG_DEFAULTS[slug] || {};
+  const merged = mergeDefaults(existing, defaults);
+  // Only write if node was empty or missing
+  if (!snap.exists() || existing === null) {
+    await ref.set(merged);
+    log('info', 'config section initialised with defaults', { path: sectionDef.rtdbPath });
+  }
+  return merged;
+}
+
+// Get one config section. Returns the raw node (merged with defaults if empty).
+router.get('/admin/config/:section', async (req, res) => {
+  try {
+    const sectionDef = getConfigSection(req.params.section);
+    if (!sectionDef) {
+      return res.status(404).json({ error: 'Unknown config section.' });
+    }
+    const { idToken } = req.query;
+    if (!idToken) {
+      log('warn', 'admin/config GET missing idToken', { ip: req.ip, section: req.params.section });
+      return res.status(400).json({ error: 'Missing idToken.' });
+    }
+
+    await admin.auth().verifyIdToken(idToken);
+    const rtdb = admin.database();
+    // Init with defaults if empty — does NOT overwrite existing values
+    const cfg = await initConfigSection(rtdb, sectionDef, req.params.section);
+
+    log('info', 'admin/config fetched', { section: req.params.section });
+    return res.json(cfg);
+  } catch (err) {
+    log('error', err.message, { endpoint: `/api/admin/config/${req.params.section}`, stack: err.stack });
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+// Update one config section. Only the whitelisted fields are written;
+// `createdAt` is preserved on sections flagged with preserveCreatedAt.
+router.put('/admin/config/:section', async (req, res) => {
+  try {
+    const sectionDef = getConfigSection(req.params.section);
+    if (!sectionDef) {
+      return res.status(404).json({ error: 'Unknown config section.' });
+    }
+    const { idToken } = req.body;
+    if (!idToken) {
+      log('warn', 'admin/config PUT missing idToken', { ip: req.ip, section: req.params.section });
+      return res.status(400).json({ error: 'Missing idToken.' });
+    }
+
+    await admin.auth().verifyIdToken(idToken);
+    const rtdb = admin.database();
+
+    const payload = {};
+    for (const field of sectionDef.fields) {
+      const clean = sanitizeConfigField(field, req.body[field.name]);
+      if (clean !== undefined) payload[field.name] = clean;
+    }
+
+    const ref = rtdb.ref(sectionDef.rtdbPath);
+    if (sectionDef.preserveCreatedAt) {
+      const snap = await ref.once('value');
+      const existing = snap.val() || {};
+      payload.createdAt = existing.createdAt || new Date().toISOString();
+    }
+
+    // Merge with existing values so partial updates don't wipe unset fields
+    const snap = await ref.once('value');
+    const existing = snap.val() || {};
+    const merged = { ...existing, ...payload };
+    await ref.set(merged);
+
+    log('info', 'admin/config updated', { section: req.params.section, fields: Object.keys(payload) });
+    return res.json({ success: true, ...merged });
+  } catch (err) {
+    log('error', err.message, { endpoint: `/api/admin/config/${req.params.section}`, stack: err.stack });
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+// ── PUBLIC APP CONFIG ENDPOINTS ─────────────────────────────────
+
+app.get('/getAppPackageNames', async (req, res) => {
+  try {
+    const rtdb = admin.database();
+    const sectionDef = getConfigSection('app_packagenames');
+    const config = await initConfigSection(rtdb, sectionDef, 'app_packagenames');
+    return res.json({
+      app_type_phone: config.app_type_phone || CONFIG_DEFAULTS.app_packagenames.app_type_phone,
+      app_type_tv: config.app_type_tv || CONFIG_DEFAULTS.app_packagenames.app_type_tv
+    });
+  } catch (err) {
+    log('error', err.message, { endpoint: '/getAppPackageNames', stack: err.stack });
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/getHomeDialogMessage', async (req, res) => {
+  try {
+    const rtdb = admin.database();
+    const sectionDef = getConfigSection('home_dialog');
+    const config = await initConfigSection(rtdb, sectionDef, 'home_dialog');
+    return res.json({ dialog_message: config.dialog_message || CONFIG_DEFAULTS.home_dialog.dialog_message });
+  } catch (err) {
+    log('error', err.message, { endpoint: '/getHomeDialogMessage', stack: err.stack });
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+// ── MOUNT ROUTER UNDER /api ───────────────────────────────────────
+
+app.use('/api', router);
+app.use('/api', express.static(path.join(__dirname, 'admin')));
+// ── START SERVER ──────────────────────────────────────────────────
+
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  log('info', `Server started on port ${PORT}`);
+  console.log(`connectTv listening on port ${PORT}`);
+});

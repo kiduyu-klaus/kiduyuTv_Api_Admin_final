@@ -1,0 +1,822 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KiduyuTV Admin Panel</title>
+  <link rel="stylesheet" href="style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <!-- Firebase Auth SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+</head>
+<body>
+  <!-- Mobile sidebar toggle -->
+  <button class="sidebar-toggle" id="sidebarToggle" aria-label="Toggle menu">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <line x1="3" y1="6" x2="21" y2="6"/>
+      <line x1="3" y1="12" x2="21" y2="12"/>
+      <line x1="3" y1="18" x2="21" y2="18"/>
+    </svg>
+  </button>
+  <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+
+  <!-- Login Screen -->
+  <div id="loginScreen" class="screen active">
+    <div class="login-container">
+      <div class="login-card">
+        <div class="login-logo">
+          <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+            <rect width="48" height="48" rx="12" fill="#E50914"/>
+            <path d="M14 16v16l12-8 12 8V16z" fill="white"/>
+          </svg>
+        </div>
+        <h1>KiduyuTV Admin</h1>
+        <p class="login-subtitle">Sign in to access the admin panel</p>
+        <form id="loginForm">
+          <div class="form-group">
+            <label for="email">Email</label>
+            <input type="email" id="email" placeholder="admin@example.com" required>
+          </div>
+          <div class="form-group">
+            <label for="password">Password</label>
+            <input type="password" id="password" placeholder="Enter password" required>
+          </div>
+          <button type="submit" class="btn-primary" id="loginBtn">
+            <span class="btn-text">Sign In</span>
+            <span class="btn-loader" style="display:none">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10" stroke-dasharray="60" stroke-dashoffset="20">
+                  <animateTransform attributeName="transform" type="rotate" from="0 12 12" to="360 12 12" dur="1s" repeatCount="indefinite"/>
+                </circle>
+              </svg>
+            </span>
+          </button>
+          <div class="divider"><span>or</span></div>
+          <button type="button" class="btn-google" id="googleLoginBtn">
+            <svg width="20" height="20" viewBox="0 0 24 24">
+              <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+              <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+              <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+              <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+            </svg>
+            Sign in with Google
+          </button>
+          <div id="loginError" class="error-msg" style="display:none"></div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Admin Screen -->
+  <div id="adminScreen" class="screen">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <svg width="32" height="32" viewBox="0 0 48 48" fill="none">
+          <rect width="48" height="48" rx="12" fill="#E50914"/>
+          <path d="M14 16v16l12-8 12 8V16z" fill="white"/>
+        </svg>
+        <span>KiduyuTV</span>
+      </div>
+      <nav class="sidebar-nav">
+        <a href="#" class="nav-item active" data-tab="dashboard">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="3" width="7" height="7" rx="1"/>
+            <rect x="14" y="3" width="7" height="7" rx="1"/>
+            <rect x="14" y="14" width="7" height="7" rx="1"/>
+            <rect x="3" y="14" width="7" height="7" rx="1"/>
+          </svg>
+          Dashboard
+        </a>
+        <a href="#" class="nav-item" data-tab="users">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+            <circle cx="9" cy="7" r="4"/>
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+            <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+          </svg>
+          Users
+        </a>
+        <a href="#" class="nav-item" data-tab="analytics">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="20" x2="18" y2="10"/>
+            <line x1="12" y1="20" x2="12" y2="4"/>
+            <line x1="6" y1="20" x2="6" y2="14"/>
+          </svg>
+          Analytics
+        </a>
+        <a href="#" class="nav-item" data-tab="currentSettings">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="12" y1="8" x2="12" y2="12"/>
+            <line x1="12" y1="16" x2="12.01" y2="16"/>
+          </svg>
+          Current Settings
+        </a>
+        <a href="#" class="nav-item" data-tab="settings">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+          </svg>
+          Settings
+        </a>
+      </nav>
+      <div class="sidebar-footer">
+        <div class="user-info">
+          <img id="userAvatar" src="" alt="" class="user-avatar" style="display:none">
+          <div class="user-details">
+            <span id="userName" class="user-name">Admin</span>
+            <span id="userEmail" class="user-email"></span>
+          </div>
+        </div>
+        <button id="logoutBtn" class="btn-logout">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+            <polyline points="16 17 21 12 16 7"/>
+            <line x1="21" y1="12" x2="9" y2="12"/>
+          </svg>
+          Logout
+        </button>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <!-- Dashboard Tab -->
+      <section id="dashboardTab" class="tab-content active">
+        <div class="tab-header">
+          <h2>Dashboard</h2>
+          <p class="tab-subtitle">Overview of KiduyuTV usage</p>
+        </div>
+        <div class="stats-grid" id="statsGrid">
+          <div class="stat-card loading">
+            <div class="stat-icon">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                <circle cx="9" cy="7" r="4"/>
+              </svg>
+            </div>
+            <div class="stat-info">
+              <span class="stat-label">Total Users</span>
+              <span class="stat-value" id="statTotalUsers">--</span>
+            </div>
+          </div>
+          <div class="stat-card loading">
+            <div class="stat-icon">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+              </svg>
+            </div>
+            <div class="stat-info">
+              <span class="stat-label">Users with My List</span>
+              <span class="stat-value" id="statUsersWithList">--</span>
+            </div>
+          </div>
+          <div class="stat-card loading">
+            <div class="stat-icon">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/>
+                <polyline points="12 6 12 12 16 14"/>
+              </svg>
+            </div>
+            <div class="stat-info">
+              <span class="stat-label">Total My List Items</span>
+              <span class="stat-value" id="statTotalListItems">--</span>
+            </div>
+          </div>
+          <div class="stat-card loading">
+            <div class="stat-icon">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polygon points="23 7 16 12 23 17 23 7"/>
+                <rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
+              </svg>
+            </div>
+            <div class="stat-info">
+              <span class="stat-label">Users with Watch History</span>
+              <span class="stat-value" id="statUsersWithHistory">--</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Dashboard Charts -->
+        <div class="charts-grid">
+          <div class="chart-card">
+            <h3>Provider Distribution</h3>
+            <div id="providerChart" class="chart-container">
+              <div class="chart-loading">Loading...</div>
+            </div>
+          </div>
+          <div class="chart-card">
+            <h3>Top Saved Movies</h3>
+            <div id="topMoviesChart" class="chart-container">
+              <div class="chart-loading">Loading...</div>
+            </div>
+          </div>
+          <div class="chart-card">
+            <h3>Top Saved TV Shows</h3>
+            <div id="topTvChart" class="chart-container">
+              <div class="chart-loading">Loading...</div>
+            </div>
+          </div>
+          <div class="chart-card">
+            <h3>Top Saved Casts</h3>
+            <div id="topCastsChart" class="chart-container">
+              <div class="chart-loading">Loading...</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Recent Activity -->
+        <div class="recent-section">
+          <h3>Recent Users</h3>
+          <div class="recent-table" id="recentUsersTable">
+            <div class="table-loading">Loading...</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Users Tab -->
+      <section id="usersTab" class="tab-content">
+        <div class="tab-header">
+          <h2>Users</h2>
+          <div class="tab-actions">
+            <div class="search-box">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="11" cy="11" r="8"/>
+                <path d="m21 21-4.35-4.35"/>
+              </svg>
+              <input type="text" id="userSearch" placeholder="Search by email, name, or UID...">
+              <button id="clearSearch" class="clear-btn" style="display:none">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+              </button>
+            </div>
+            <button id="refreshUsers" class="btn-refresh">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="23 4 23 10 17 10"/>
+                <polyline points="1 20 1 14 7 14"/>
+                <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+              </svg>
+              Refresh
+            </button>
+          </div>
+        </div>
+
+        <div class="users-table-wrapper">
+          <table class="users-table" id="usersTable">
+            <thead>
+              <tr>
+                <th>User</th>
+                <th>Email</th>
+                <th>Joined</th>
+                <th>Last Login</th>
+                <th>My List</th>
+                <th>Watch History</th>
+                <th>Channels</th>
+                <th>Casts</th>
+                <th>Provider</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="usersTableBody">
+              <tr><td colspan="10" class="table-loading">Loading users...</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="pagination" id="usersPagination">
+          <button id="prevPage" class="btn-page" disabled>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="15 18 9 12 15 6"/>
+            </svg>
+            Prev
+          </button>
+          <span class="page-info" id="pageInfo">Page 1 of 1</span>
+          <button id="nextPage" class="btn-page" disabled>
+            Next
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="9 18 15 12 9 6"/>
+            </svg>
+          </button>
+        </div>
+      </section>
+
+      <!-- User Detail Modal -->
+      <div id="userDetailModal" class="modal">
+        <div class="modal-content">
+          <div class="modal-header">
+            <div class="modal-user-info">
+              <img id="detailAvatar" src="" alt="" class="detail-avatar" style="display:none">
+              <div>
+                <h3 id="detailUserName">User Details</h3>
+                <span id="detailUserEmail" class="detail-email"></span>
+              </div>
+            </div>
+            <button class="modal-close" id="closeUserDetail">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+              </svg>
+            </button>
+          </div>
+          <div class="modal-body">
+            <div class="detail-tabs">
+              <button class="detail-tab active" data-section="mylist">My List</button>
+              <button class="detail-tab" data-section="history">Watch History</button>
+              <button class="detail-tab" data-section="channels">Channels</button>
+              <button class="detail-tab" data-section="casts">Saved Casts</button>
+              <button class="detail-tab" data-section="companies">Companies</button>
+              <button class="detail-tab" data-section="networks">Networks</button>
+            </div>
+            <div class="detail-content" id="detailContent">
+              <div class="detail-loading">Loading...</div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button id="deleteUserData" class="btn-danger">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="3 6 5 6 21 6"/>
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+              </svg>
+              Delete User Data
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Analytics Tab -->
+      <section id="analyticsTab" class="tab-content">
+        <div class="tab-header">
+          <h2>Analytics</h2>
+          <button id="refreshAnalytics" class="btn-refresh">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="23 4 23 10 17 10"/>
+              <polyline points="1 20 1 14 7 14"/>
+              <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+            </svg>
+            Refresh
+          </button>
+        </div>
+
+        <div class="analytics-grid">
+          <div class="analytics-card">
+            <h4>Provider Usage</h4>
+            <div id="analyticsProviders" class="analytics-list"></div>
+          </div>
+          <div class="analytics-card">
+            <h4>Top Movies in My List</h4>
+            <div id="analyticsTopMovies" class="analytics-list"></div>
+          </div>
+          <div class="analytics-card">
+            <h4>Top TV Shows in My List</h4>
+            <div id="analyticsTopTv" class="analytics-list"></div>
+          </div>
+          <div class="analytics-card">
+            <h4>Top Saved Actors</h4>
+            <div id="analyticsTopCasts" class="analytics-list"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Current Settings Tab (read-only snapshot) -->
+      <section id="currentSettingsTab" class="tab-content">
+        <div class="tab-header">
+          <h2>Current Settings</h2>
+          <p class="tab-subtitle">Live snapshot of all app configuration values from Firebase</p>
+          <button id="refreshCurrentSettings" class="btn-refresh">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="23 4 23 10 17 10"/>
+              <polyline points="1 20 1 14 7 14"/>
+              <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+            </svg>
+            Refresh
+          </button>
+        </div>
+        <div id="currentSettingsContent" class="settings-readonly-grid">
+          <div class="settings-readonly-loading">Loading settings from Firebase…</div>
+        </div>
+      </section>
+
+      <!-- Settings Tab -->
+      <section id="settingsTab" class="tab-content">
+        <div class="tab-header">
+          <h2>Settings</h2>
+        </div>
+        <div class="settings-section">
+          <h3>Admin Management</h3>
+          <p class="settings-desc">To add new admins, add their Firebase UID to the <code>admins</code> collection in Firestore.</p>
+          <div class="settings-info">
+            <div class="info-item">
+              <span class="info-label">Current Admin UID:</span>
+              <code id="currentAdminUid">Loading...</code>
+            </div>
+            <div class="info-item">
+              <span class="info-label">API Status:</span>
+              <span id="apiStatus" class="status-badge">Checking...</span>
+            </div>
+          </div>
+        </div>
+        <div class="settings-section">
+          <h3>Data Management</h3>
+          <p class="settings-desc">View and manage app data from Firebase Realtime Database.</p>
+          <div class="settings-actions">
+            <button id="exportData" class="btn-secondary">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="7 10 12 15 17 10"/>
+                <line x1="12" y1="15" x2="12" y2="3"/>
+              </svg>
+              Export All Users Data
+            </button>
+          </div>
+        </div>
+        <div class="settings-section">
+          <h3>Streaming Configuration</h3>
+          <p class="settings-desc">Configure IPTV playlist, EPG, schedule API, and cache duration. Saved to <code>app_config/playlist_url</code>.</p>
+          <div class="form-group">
+            <label for="streamingPlaylistUrl">IPTV Playlist URL</label>
+            <input type="url" id="streamingPlaylistUrl" placeholder="https://example.com/playlist.m3u" autocomplete="off">
+          </div>
+          <div class="form-group">
+            <label for="streamingPlaylistEpg">IPTV EPG URL</label>
+            <input type="url" id="streamingPlaylistEpg" placeholder="https://example.com/epg.xml" autocomplete="off">
+          </div>
+          <div class="form-group">
+            <label for="streamingScheduleApi">Schedule API Base URL</label>
+            <input type="url" id="streamingScheduleApi" placeholder="https://api.example.com" autocomplete="off">
+          </div>
+          <div class="form-group">
+            <label for="streamingCacheDuration">Playlist Cache Duration (hours)</label>
+            <input type="number" id="streamingCacheDuration" placeholder="24" min="0" step="1">
+          </div>
+          <span class="form-hint" id="streamingMeta">Loading…</span>
+          <div class="settings-actions">
+            <button id="clearStreamingConfig" class="btn-secondary" type="button">Clear</button>
+            <button id="saveStreamingConfig" class="btn-primary" type="button">Save</button>
+          </div>
+        </div>
+
+        <div class="settings-section">
+          <h3>API Configuration</h3>
+          <p class="settings-desc">Third-party API credentials used by the app. Saved to <code>app_config/api_Configuration</code>.</p>
+          <div class="form-group">
+            <label for="apiTmdbToken">TMDB Bearer Token</label>
+            <input type="password" id="apiTmdbToken" placeholder="eyJhbGciOi…" autocomplete="off">
+          </div>
+          <div class="form-group">
+            <label for="apiTraktClientId">Trakt Client ID</label>
+            <input type="password" id="apiTraktClientId" placeholder="Trakt client id" autocomplete="off">
+          </div>
+          <div class="form-group">
+            <label for="apiTraktClientSecret">Trakt Client Secret</label>
+            <input type="password" id="apiTraktClientSecret" placeholder="Trakt client secret" autocomplete="off">
+          </div>
+          <div class="settings-actions">
+            <button id="clearApiConfig" class="btn-secondary" type="button">Clear</button>
+            <button id="saveApiConfig" class="btn-primary" type="button">Save</button>
+          </div>
+        </div>
+
+        <div class="settings-section">
+          <h3>Ad Configuration</h3>
+          <p class="settings-desc">Google AdMob ad unit IDs and test mode. Saved to <code>app_config/google_ads_Configuration</code>.</p>
+          <div class="config-toggle-grid">
+            <div class="form-group">
+              <label class="toggle-row" for="adsEnableTestAds">
+                <span>Enable Test Ads</span>
+                <span class="toggle">
+                  <input type="checkbox" id="adsEnableTestAds">
+                  <span class="toggle-slider"></span>
+                </span>
+              </label>
+            </div>
+            <div class="form-group">
+              <label class="toggle-row" for="adsUseTestAds">
+                <span>Use Test IDs (App-Side)</span>
+                <span class="toggle">
+                  <input type="checkbox" id="adsUseTestAds">
+                  <span class="toggle-slider"></span>
+                </span>
+              </label>
+            </div>
+          </div>
+          <div class="config-grid">
+            <div>
+              <h4 class="config-sub-heading">Phone</h4>
+              <div class="form-group">
+                <label for="adsPhoneBanner">Banner Ad Unit ID</label>
+                <input type="text" id="adsPhoneBanner" placeholder="ca-app-pub-…" autocomplete="off">
+              </div>
+              <div class="form-group">
+                <label for="adsPhoneInterstitial">Interstitial Ad Unit ID</label>
+                <input type="text" id="adsPhoneInterstitial" placeholder="ca-app-pub-…" autocomplete="off">
+              </div>
+              <div class="form-group">
+                <label for="adsPhoneRewarded">Rewarded Ad Unit ID</label>
+                <input type="text" id="adsPhoneRewarded" placeholder="ca-app-pub-…" autocomplete="off">
+              </div>
+            </div>
+            <div>
+              <h4 class="config-sub-heading">TV</h4>
+              <div class="form-group">
+                <label for="adsTvBanner">Banner Ad Unit ID</label>
+                <input type="text" id="adsTvBanner" placeholder="ca-app-pub-…" autocomplete="off">
+              </div>
+              <div class="form-group">
+                <label for="adsTvInterstitial">Interstitial Ad Unit ID</label>
+                <input type="text" id="adsTvInterstitial" placeholder="ca-app-pub-…" autocomplete="off">
+              </div>
+            </div>
+          </div>
+          <div class="settings-actions">
+            <button id="clearAdsConfig" class="btn-secondary" type="button">Clear</button>
+            <button id="saveAdsConfig" class="btn-primary" type="button">Save</button>
+          </div>
+        </div>
+
+        <div class="settings-section">
+          <h3>Filter Lists</h3>
+          <p class="settings-desc">Ad-blocking filter lists for the app. Saved to <code>app_config/filter_lists_Configuration</code>.</p>
+          <div class="form-group">
+            <label class="toggle-row" for="filtersEnableCustom">
+              <span>Enable Custom Filters</span>
+              <span class="toggle">
+                <input type="checkbox" id="filtersEnableCustom">
+                <span class="toggle-slider"></span>
+              </span>
+            </label>
+          </div>
+          <div class="config-grid">
+            <div>
+              <h4 class="config-sub-heading">Primary URLs</h4>
+              <div class="form-group">
+                <label for="filtersEasyList">EasyList URL</label>
+                <input type="url" id="filtersEasyList" placeholder="https://easylist.to/easylist/easylist.txt" autocomplete="off">
+              </div>
+              <div class="form-group">
+                <label for="filtersEasyPrivacy">EasyPrivacy URL</label>
+                <input type="url" id="filtersEasyPrivacy" placeholder="https://easylist.to/easylist/easyprivacy.txt" autocomplete="off">
+              </div>
+              <div class="form-group">
+                <label for="filtersCustomFilters">Custom Filters URL</label>
+                <input type="url" id="filtersCustomFilters" placeholder="https://raw.githubusercontent.com/..." autocomplete="off">
+              </div>
+            </div>
+            <div>
+              <h4 class="config-sub-heading">Fallback URLs</h4>
+              <div class="form-group">
+                <label for="filtersFallbackEasyList">EasyList Fallback URL</label>
+                <input type="url" id="filtersFallbackEasyList" placeholder="https://easylist-downloads.adblockplus.org/easylist.txt" autocomplete="off">
+              </div>
+              <div class="form-group">
+                <label for="filtersFallbackEasyPrivacy">EasyPrivacy Fallback URL</label>
+                <input type="url" id="filtersFallbackEasyPrivacy" placeholder="https://easylist-downloads.adblockplus.org/easyprivacy.txt" autocomplete="off">
+              </div>
+            </div>
+          </div>
+          <div class="config-grid">
+            <div class="form-group">
+              <label for="filtersUpdateInterval">Update Interval (hours)</label>
+              <input type="number" id="filtersUpdateInterval" placeholder="24" min="0" step="1">
+            </div>
+            <div class="form-group">
+              <label for="filtersTimeout">Download Timeout (ms)</label>
+              <input type="number" id="filtersTimeout" placeholder="30000" min="0" step="1000">
+            </div>
+          </div>
+          <div class="settings-actions">
+            <button id="clearFiltersConfig" class="btn-secondary" type="button">Clear</button>
+            <button id="saveFiltersConfig" class="btn-primary" type="button">Save</button>
+          </div>
+        </div>
+
+        <div class="settings-section">
+          <h3>Network Settings</h3>
+          <p class="settings-desc">HTTP client tunables. Saved to <code>app_config/network_settings_Configuration</code>.</p>
+          <div class="config-grid">
+            <div>
+              <h4 class="config-sub-heading">Cache</h4>
+              <div class="form-group">
+                <label for="networkCacheSize">Cache Size (MB)</label>
+                <input type="number" id="networkCacheSize" placeholder="10" min="0" step="1">
+              </div>
+              <div class="form-group">
+                <label for="networkCacheMaxAge">Cache Max Age (minutes)</label>
+                <input type="number" id="networkCacheMaxAge" placeholder="5" min="0" step="1">
+              </div>
+              <div class="form-group">
+                <label for="networkCacheMaxStale">Cache Max Stale (days)</label>
+                <input type="number" id="networkCacheMaxStale" placeholder="7" min="0" step="1">
+              </div>
+            </div>
+            <div>
+              <h4 class="config-sub-heading">Timeouts &amp; Retries</h4>
+              <div class="form-group">
+                <label for="networkTimeout">API Timeout (seconds)</label>
+                <input type="number" id="networkTimeout" placeholder="30" min="1" step="1">
+              </div>
+              <div class="form-group">
+                <label for="networkMaxRetries">Max Retries</label>
+                <input type="number" id="networkMaxRetries" placeholder="3" min="0" step="1">
+              </div>
+              <div class="form-group">
+                <label for="networkRetryDelay">Retry Delay (ms)</label>
+                <input type="number" id="networkRetryDelay" placeholder="3000" min="0" step="100">
+              </div>
+            </div>
+          </div>
+          <div class="settings-actions">
+            <button id="clearNetworkConfig" class="btn-secondary" type="button">Clear</button>
+            <button id="saveNetworkConfig" class="btn-primary" type="button">Save</button>
+          </div>
+        </div>
+
+        <div class="settings-section">
+          <h3>Stream Providers</h3>
+          <p class="settings-desc">Configure stream sources. Each provider is saved at <code>app_config/stream_providers_Configuration/&lt;name&gt;</code>. Use <code>%d</code> for IDs; TV uses three <code>%d</code> for TMDB ID, season, episode.</p>
+          <div class="provider-list" id="providersList"></div>
+          <span class="form-hint" id="providersMeta">Loading…</span>
+
+          <div class="add-provider-form">
+            <div class="provider-add-fields">
+              <div class="form-group">
+                <label for="providerName">Provider Name</label>
+                <input type="text" id="providerName" placeholder="e.g. VidLink" autocomplete="off">
+              </div>
+              <div class="form-group">
+                <label for="providerUrl">Base URL</label>
+                <input type="url" id="providerUrl" placeholder="https://vidlink.pro" autocomplete="off">
+              </div>
+              <div class="form-group">
+                <label for="providerMovieUrl">Movie URL Template</label>
+                <input type="url" id="providerMovieUrl" placeholder="https://vidlink.pro/movie/%d" autocomplete="off">
+              </div>
+              <div class="form-group">
+                <label for="providerTvUrl">TV URL Template</label>
+                <input type="url" id="providerTvUrl" placeholder="https://vidlink.pro/tv/%d/%d/%d" autocomplete="off">
+              </div>
+            </div>
+            <button id="addProviderBtn" class="btn-primary add-provider-btn" type="button">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              Add
+            </button>
+          </div>
+          <div class="settings-actions">
+            <button id="clearProvidersConfig" class="btn-secondary" type="button">Clear Form</button>
+          </div>
+        </div>
+
+        <!-- Edit Provider Modal -->
+        <div id="editProviderModal" class="modal">
+          <div class="modal-content" style="max-width: 600px">
+            <div class="modal-header">
+              <div class="modal-user-info">
+                <div>
+                  <h3>Edit Provider</h3>
+                  <span id="editProviderName" class="detail-email"></span>
+                </div>
+              </div>
+              <button class="modal-close" id="closeEditProvider">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              </button>
+            </div>
+            <div class="modal-body">
+              <div class="form-group">
+                <label for="editProviderDisplayName">Display Name</label>
+                <input type="text" id="editProviderDisplayName" autocomplete="off">
+              </div>
+              <div class="form-group">
+                <label for="editProviderUrl">Base URL</label>
+                <input type="url" id="editProviderUrl" autocomplete="off">
+              </div>
+              <div class="form-group">
+                <label for="editProviderMovieUrl">Movie URL Template</label>
+                <input type="url" id="editProviderMovieUrl" autocomplete="off">
+              </div>
+              <div class="form-group">
+                <label for="editProviderTvUrl">TV URL Template</label>
+                <input type="url" id="editProviderTvUrl" autocomplete="off">
+              </div>
+              <div class="form-group">
+                <label for="editProviderIframeAttrs">iframe Attributes (one per line, key=value)</label>
+                <textarea id="editProviderIframeAttrs" rows="3" placeholder="frameborder=0&#10;allow=encrypted-media" autocomplete="off"></textarea>
+              </div>
+              <div class="form-group">
+                <label for="editProviderAllowAttrs">Allow Attributes</label>
+                <input type="text" id="editProviderAllowAttrs" placeholder="autoplay, fullscreen" autocomplete="off">
+              </div>
+              <div class="form-group">
+                <label for="editProviderMovieParams">Movie Parameters (one per line, key=value)</label>
+                <textarea id="editProviderMovieParams" rows="3" placeholder="autoPlay=true&#10;color=8B5CF6" autocomplete="off"></textarea>
+              </div>
+              <div class="form-group">
+                <label for="editProviderTvParams">TV Parameters (one per line, key=value)</label>
+                <textarea id="editProviderTvParams" rows="3" placeholder="autoPlay=true&#10;autoNext=true" autocomplete="off"></textarea>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button id="saveEditProvider" class="btn-primary" type="button">Save Changes</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="settings-section">
+          <h3>Feature Flags</h3>
+          <p class="settings-desc">Global app toggles. Saved to <code>app_config/feature_flags_Configuration</code>.</p>
+          <div class="config-grid">
+            <div>
+              <h4 class="config-sub-heading">Ads</h4>
+              <div class="form-group">
+                <label class="toggle-row" for="featuresDisableAds">
+                  <span>Disable Ads Globally</span>
+                  <span class="toggle">
+                    <input type="checkbox" id="featuresDisableAds">
+                    <span class="toggle-slider"></span>
+                  </span>
+                </label>
+              </div>
+            </div>
+            <div>
+              <h4 class="config-sub-heading">Player / TV Controls</h4>
+              <div class="form-group">
+                <label for="featuresCursorSpeed">Cursor Speed (px)</label>
+                <input type="number" id="featuresCursorSpeed" placeholder="50" min="0" step="1">
+              </div>
+              <div class="form-group">
+                <label for="featuresCursorHideDelay">Cursor Hide Delay (ms)</label>
+                <input type="number" id="featuresCursorHideDelay" placeholder="5000" min="0" step="100">
+              </div>
+            </div>
+          </div>
+          <div class="settings-actions">
+            <button id="clearFeaturesConfig" class="btn-secondary" type="button">Clear</button>
+            <button id="saveFeaturesConfig" class="btn-primary" type="button">Save</button>
+          </div>
+        </div>
+        <div class="settings-section">
+          <h3>App Package Names</h3>
+          <p class="settings-desc">App package identifiers used by the app to detect device type. Saved to <code>app_config/app_packagenames</code>.</p>
+          <div class="config-grid">
+            <div>
+              <div class="form-group">
+                <label for="appPackgenamesPhone">Phone Package Name</label>
+                <input type="text" id="appPackgenamesPhone" placeholder="com.example.phone" autocomplete="off">
+              </div>
+            </div>
+            <div>
+              <div class="form-group">
+                <label for="appPackgenamesTv">TV Package Name</label>
+                <input type="text" id="appPackgenamesTv" placeholder="com.example.tv" autocomplete="off">
+              </div>
+            </div>
+          </div>
+          <div class="settings-actions">
+            <button id="clearAppPackgenamesConfig" class="btn-secondary" type="button">Clear</button>
+            <button id="saveAppPackgenamesConfig" class="btn-primary" type="button">Save</button>
+          </div>
+        </div>
+
+        <div class="settings-section">
+          <h3>Home Dialog</h3>
+          <p class="settings-desc">A welcome message shown to users on the home screen. Saved to <code>app_config/home_dialog</code>.</p>
+          <div class="form-group">
+            <label for="homeDialogMessage">Dialog Message</label>
+            <input type="text" id="homeDialogMessage" placeholder="Welcome message..." autocomplete="off" style="width:100%;padding:12px 16px;background:#1a1d23;border:1px solid #2a2e38;border-radius:8px;color:#E6E6E6;font-size:14px;font-family:inherit;transition:border-color .2s;box-sizing:border-box" />
+          </div>
+          <div class="settings-actions">
+            <button id="clearHomeDialogConfig" class="btn-secondary" type="button">Clear</button>
+            <button id="saveHomeDialogConfig" class="btn-primary" type="button">Save</button>
+          </div>
+        </div>
+
+        <div class="settings-section">
+          <h3>About</h3>
+          <div class="about-info">
+            <p><strong>KiduyuTV Admin Panel</strong></p>
+            <p>Version 1.0.0</p>
+            <p>Built with Firebase Admin SDK + Express.js</p>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Toast Notifications -->
+  <div id="toastContainer" class="toast-container"></div>
+
+  <!-- Confirm Dialog -->
+  <div id="confirmDialog" class="dialog-overlay" style="display:none">
+    <div class="dialog-box">
+      <h3 id="dialogTitle">Confirm Action</h3>
+      <p id="dialogMessage">Are you sure?</p>
+      <div class="dialog-actions">
+        <button id="dialogCancel" class="btn-secondary">Cancel</button>
+        <button id="dialogConfirm" class="btn-danger">Confirm</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
