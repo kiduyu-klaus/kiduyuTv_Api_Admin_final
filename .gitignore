@@ -3,3 +3,4 @@ stderr.log
 admins_firestore_import.json
 sample_user_data.json
 serviceAccountKey.json
+rtdb-app_config-export.json

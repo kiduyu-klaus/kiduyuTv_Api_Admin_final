@@ -153,7 +153,7 @@ async function handleGoogleLogin() {
     idToken = await result.user.getIdToken();
 
     // Verify this user is an admin in Firestore
-    const verifyRes = await fetch(`${API_BASE}/api/admin/verify`, {
+    const verifyRes = await fetch(`${API_BASE}/admin/verify`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ idToken })
@@ -902,14 +902,18 @@ const CONFIG_SECTIONS = [
       { id: 'appPackgenamesPhone', name: 'app_type_phone' },
       { id: 'appPackgenamesTv',    name: 'app_type_tv' }
     ],
-    saveLabel: 'App package names'
+    saveLabel: 'App package names',
+    saveButtonId: 'saveAppPackgenamesConfig',
+    clearButtonId: 'clearAppPackgenamesConfig'
   },
   {
     id: 'home_dialog',
     fields: [
       { id: 'homeDialogMessage', name: 'dialog_message' }
     ],
-    saveLabel: 'Home dialog'
+    saveLabel: 'Home dialog',
+    saveButtonId: 'saveHomeDialogConfig',
+    clearButtonId: 'clearHomeDialogConfig'
   }
 ];
 
@@ -966,7 +970,7 @@ async function loadConfigSection(sectionId) {
 async function saveConfigSection(sectionId) {
   const section = findConfigSection(sectionId);
   if (!section) return;
-  const $btn = document.getElementById(`save${section.id.charAt(0).toUpperCase() + section.id.slice(1)}Config`);
+  const $btn = document.getElementById(section.saveButtonId || `save${section.id.charAt(0).toUpperCase() + section.id.slice(1)}Config`);
   const original = $btn ? $btn.innerHTML : '';
   if ($btn) {
     $btn.disabled = true;
@@ -1008,9 +1012,11 @@ function clearConfigSection(sectionId) {
 
 // Wire up save / clear buttons for every section.
 ['streaming', 'api', 'ads', 'filters', 'network', 'features', 'app_packagenames', 'home_dialog'].forEach(sectionId => {
+  const section = findConfigSection(sectionId);
+  if (!section) return;
   const cap = sectionId.charAt(0).toUpperCase() + sectionId.slice(1);
-  const $save = document.getElementById(`save${cap}Config`);
-  const $clear = document.getElementById(`clear${cap}Config`);
+  const $save = document.getElementById(section.saveButtonId || `save${cap}Config`);
+  const $clear = document.getElementById(section.clearButtonId || `clear${cap}Config`);
   if ($save) $save.addEventListener('click', () => saveConfigSection(sectionId));
   if ($clear) $clear.addEventListener('click', () => clearConfigSection(sectionId));
 });
