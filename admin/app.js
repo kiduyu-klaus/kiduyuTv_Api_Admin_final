@@ -6,6 +6,7 @@ let totalPages = 1;
 let searchQuery = '';
 let currentUserUid = null;
 let currentEmailUserUid = null;
+let latestApkLinks = null;
 
 const firebaseConfig = {
   apiKey: "AIzaSyBLrg5egOOGrd3wyf5IBzPI2m9fHp_AR6k",
@@ -215,7 +216,10 @@ document.querySelectorAll('.nav-item').forEach(item => {
     if (tab === 'analytics') loadAnalytics();
     if (tab === 'currentSettings') loadCurrentSettings();
     if (tab === 'users') loadUsers();
-    if (tab === 'sendEmail') loadEmailRecipientCount();
+    if (tab === 'sendEmail') {
+      loadEmailRecipientCount();
+      loadLatestApkLinksPreview('apkLinksPreview');
+    }
     if (tab === 'settings') {
       checkApiStatus();
       ['streaming', 'api', 'ads', 'filters', 'network', 'features', 'app_packagenames', 'home_dialog'].forEach(loadConfigSection);
@@ -575,6 +579,45 @@ document.getElementById('deleteUserData').addEventListener('click', async () => 
   }
 });
 
+// ── LATEST APK LINKS ────────────────────────────────────────────────
+function renderApkLinksPreview(targetId, apkLinks) {
+  const preview = document.getElementById(targetId);
+  if (!preview) return;
+
+  if (!apkLinks) {
+    preview.textContent = 'Latest APK links will be fetched from GitHub.';
+    preview.className = 'form-hint';
+    return;
+  }
+
+  preview.innerHTML = `
+    Latest ${escapeHtml(apkLinks.tagName || 'release')}:
+    ${escapeHtml(apkLinks.phone?.name || 'Phone APK')} and
+    ${escapeHtml(apkLinks.tv?.name || 'TV APK')}
+  `;
+  preview.className = 'form-hint apk-links-preview';
+}
+
+async function loadLatestApkLinksPreview(targetId) {
+  const preview = document.getElementById(targetId);
+  if (preview) {
+    preview.textContent = 'Fetching latest APK links...';
+    preview.className = 'form-hint';
+  }
+
+  try {
+    if (!latestApkLinks) {
+      latestApkLinks = await apiCall('GET', `/admin/email/latest-apks?idToken=${encodeURIComponent(idToken)}`);
+    }
+    renderApkLinksPreview(targetId, latestApkLinks);
+  } catch (err) {
+    if (preview) {
+      preview.textContent = `Failed to fetch latest APK links: ${err.message}`;
+      preview.className = 'form-hint error';
+    }
+  }
+}
+
 // ── SINGLE USER EMAIL ────────────────────────────────────────────────
 function setSingleEmailSummary(message, type = 'success') {
   const $summary = document.getElementById('singleEmailSummary');
@@ -598,6 +641,7 @@ function openSingleUserEmailModal({ uid, email, name }) {
   const subject = document.getElementById('singleEmailSubject');
   const messageText = document.getElementById('singleEmailMessageText');
   const messageHtml = document.getElementById('singleEmailMessageHtml');
+  const includeApkLinks = document.getElementById('singleIncludeApkLinks');
   const summary = document.getElementById('singleEmailSummary');
 
   if (recipient) {
@@ -606,7 +650,9 @@ function openSingleUserEmailModal({ uid, email, name }) {
   if (subject) subject.value = '';
   if (messageText) messageText.value = '';
   if (messageHtml) messageHtml.value = '';
+  if (includeApkLinks) includeApkLinks.checked = false;
   if (summary) summary.style.display = 'none';
+  loadLatestApkLinksPreview('singleApkLinksPreview');
 
   modal?.classList.add('active');
   subject?.focus();
@@ -619,6 +665,7 @@ async function sendSingleUserEmail() {
   const subject = document.getElementById('singleEmailSubject')?.value.trim() || '';
   const messageText = document.getElementById('singleEmailMessageText')?.value.trim() || '';
   const messageHtml = document.getElementById('singleEmailMessageHtml')?.value.trim() || '';
+  const includeApkLinks = document.getElementById('singleIncludeApkLinks')?.checked || false;
 
   if (!subject) {
     showToast('Email subject is required', 'error');
@@ -644,10 +691,12 @@ async function sendSingleUserEmail() {
       idToken,
       subject,
       messageText,
-      messageHtml
+      messageHtml,
+      includeApkLinks
     });
 
-    setSingleEmailSummary(`Email sent to ${result.email}`);
+    const apkNote = result.apkLinks ? ` with ${result.apkLinks.tagName || 'latest'} APK links` : '';
+    setSingleEmailSummary(`Email sent to ${result.email}${apkNote}`);
     showToast('Email sent successfully', 'success');
   } catch (err) {
     setSingleEmailSummary(err.message, 'error');
@@ -1464,11 +1513,13 @@ function clearEmailForm() {
   const subject = document.getElementById('emailSubject');
   const messageText = document.getElementById('emailMessageText');
   const messageHtml = document.getElementById('emailMessageHtml');
+  const includeApkLinks = document.getElementById('includeApkLinks');
   const summary = document.getElementById('emailSendSummary');
 
   if (subject) subject.value = '';
   if (messageText) messageText.value = '';
   if (messageHtml) messageHtml.value = '';
+  if (includeApkLinks) includeApkLinks.checked = false;
   if (summary) summary.style.display = 'none';
   if (subject) subject.focus();
 }
@@ -1478,6 +1529,7 @@ async function sendEmailToUsers() {
   const subject = document.getElementById('emailSubject')?.value.trim() || '';
   const messageText = document.getElementById('emailMessageText')?.value.trim() || '';
   const messageHtml = document.getElementById('emailMessageHtml')?.value.trim() || '';
+  const includeApkLinks = document.getElementById('includeApkLinks')?.checked || false;
 
   if (!subject) {
     showToast('Email subject is required', 'error');
@@ -1507,10 +1559,12 @@ async function sendEmailToUsers() {
       idToken,
       subject,
       messageText,
-      messageHtml
+      messageHtml,
+      includeApkLinks
     });
 
-    const summary = `Email sent to ${result.recipientCount || 0} users in ${result.batchCount || 0} batches.`;
+    const apkNote = result.apkLinks ? ` Included ${result.apkLinks.tagName || 'latest'} APK links.` : '';
+    const summary = `Email sent to ${result.recipientCount || 0} users in ${result.batchCount || 0} batches.${apkNote}`;
     setEmailSummary(summary);
     showToast('Email sent successfully', 'success');
     loadEmailRecipientCount();

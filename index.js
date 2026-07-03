@@ -54,6 +54,9 @@ app.use((req, res, next) => {
 // ── ROUTER ───────────────────────────────────────────────────────
 
 const router = express.Router();
+const GITHUB_RELEASES_API_URL = 'https://api.github.com/repos/kiduyu-klaus/KiduyuTv_final/releases/latest';
+const APK_LINK_CACHE_TTL_MS = 5 * 60 * 1000;
+let latestApkLinksCache = null;
 
 function createHttpError(statusCode, message) {
   const err = new Error(message);
@@ -126,6 +129,7 @@ function cleanEmailPayload(body) {
   const cleanSubject = typeof body.subject === 'string' ? body.subject.trim() : '';
   const cleanText = typeof body.messageText === 'string' ? body.messageText.trim() : '';
   const cleanHtml = typeof body.messageHtml === 'string' ? body.messageHtml.trim() : '';
+  const includeApkLinks = body.includeApkLinks === true || body.includeApkLinks === 'true';
 
   if (!cleanSubject) {
     throw createHttpError(400, 'Email subject is required.');
@@ -143,7 +147,114 @@ function cleanEmailPayload(body) {
   return {
     subject: cleanSubject,
     text: cleanText,
-    html: cleanHtml
+    html: cleanHtml,
+    includeApkLinks
+  };
+}
+
+async function fetchJson(url) {
+  if (typeof fetch !== 'function') {
+    throw createHttpError(500, 'This Node.js runtime does not support fetch.');
+  }
+
+  const res = await fetch(url, {
+    headers: {
+      'Accept': 'application/vnd.github+json',
+      'User-Agent': 'KiduyuTV-Admin'
+    }
+  });
+
+  if (!res.ok) {
+    throw createHttpError(502, `GitHub release lookup failed (${res.status}).`);
+  }
+
+  return res.json();
+}
+
+function pickApkAsset(assets, platform) {
+  const lowerPlatform = platform.toLowerCase();
+  return assets.find(asset => {
+    const name = String(asset.name || '').toLowerCase();
+    return name.endsWith('.apk') && name.startsWith(`kiduyutv-${lowerPlatform}-release`);
+  });
+}
+
+async function getLatestApkLinks({ forceRefresh = false } = {}) {
+  const now = Date.now();
+  if (!forceRefresh && latestApkLinksCache && latestApkLinksCache.expiresAt > now) {
+    return latestApkLinksCache.value;
+  }
+
+  const release = await fetchJson(process.env.GITHUB_RELEASES_API_URL || GITHUB_RELEASES_API_URL);
+  const assets = Array.isArray(release.assets) ? release.assets : [];
+  const phone = pickApkAsset(assets, 'phone');
+  const tv = pickApkAsset(assets, 'tv');
+
+  if (!phone || !tv) {
+    throw createHttpError(502, 'Latest GitHub release does not contain both phone and TV APK assets.');
+  }
+
+  const value = {
+    tagName: release.tag_name || '',
+    releaseName: release.name || release.tag_name || 'Latest release',
+    releaseUrl: release.html_url || 'https://github.com/kiduyu-klaus/KiduyuTv_final/releases/latest',
+    phone: {
+      name: phone.name,
+      url: phone.browser_download_url
+    },
+    tv: {
+      name: tv.name,
+      url: tv.browser_download_url
+    }
+  };
+
+  latestApkLinksCache = {
+    value,
+    expiresAt: now + APK_LINK_CACHE_TTL_MS
+  };
+
+  return value;
+}
+
+function escapeHtmlValue(value) {
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+async function maybeAttachLatestApkLinks(email) {
+  if (!email.includeApkLinks) return { email, apkLinks: null };
+
+  const apkLinks = await getLatestApkLinks();
+  const textBlock = [
+    '',
+    '',
+    `KiduyuTV latest APK downloads (${apkLinks.tagName || 'latest'}):`,
+    `Phone / Tablet: ${apkLinks.phone.url}`,
+    `Android TV / Fire TV: ${apkLinks.tv.url}`,
+    `Release page: ${apkLinks.releaseUrl}`
+  ].join('\n');
+
+  const htmlBlock = `
+    <hr>
+    <p><strong>KiduyuTV latest APK downloads (${escapeHtmlValue(apkLinks.tagName || 'latest')}):</strong></p>
+    <ul>
+      <li><a href="${escapeHtmlValue(apkLinks.phone.url)}">Phone / Tablet APK</a></li>
+      <li><a href="${escapeHtmlValue(apkLinks.tv.url)}">Android TV / Fire TV APK</a></li>
+      <li><a href="${escapeHtmlValue(apkLinks.releaseUrl)}">Release page</a></li>
+    </ul>
+  `;
+
+  return {
+    apkLinks,
+    email: {
+      ...email,
+      text: `${email.text || ''}${textBlock}`,
+      html: email.html ? `${email.html}${htmlBlock}` : email.html
+    }
   };
 }
 
@@ -259,11 +370,25 @@ router.get('/admin/email/recipients', async (req, res) => {
   }
 });
 
+router.get('/admin/email/latest-apks', async (req, res) => {
+  try {
+    await verifyAdminToken(req.query.idToken);
+    const forceRefresh = req.query.refresh === 'true';
+    const apkLinks = await getLatestApkLinks({ forceRefresh });
+
+    log('info', 'admin/email/latest-apks fetched', { tagName: apkLinks.tagName });
+    return res.json({ success: true, ...apkLinks });
+  } catch (err) {
+    log('error', err.message, { endpoint: '/api/admin/email/latest-apks', stack: err.stack });
+    return res.status(err.statusCode || 500).json({ error: err.message });
+  }
+});
+
 router.post('/admin/email/send', async (req, res) => {
   try {
     const { idToken } = req.body;
     const adminUser = await verifyAdminToken(idToken);
-    const email = cleanEmailPayload(req.body);
+    const preparedEmail = cleanEmailPayload(req.body);
 
     const missingConfig = validateEmailConfig();
     if (missingConfig.length) {
@@ -277,10 +402,11 @@ router.post('/admin/email/send', async (req, res) => {
 
     const parsedBatchSize = Number(process.env.EMAIL_BATCH_SIZE || 50);
     const batchSize = Number.isFinite(parsedBatchSize) && parsedBatchSize > 0
-      ? Math.min(Math.floor(parsedBatchSize))
+      ? Math.min(Math.floor(parsedBatchSize), 100)
       : 50;
     const batches = chunkArray(recipients, batchSize);
     const transporter = getEmailTransporter();
+    const { email, apkLinks } = await maybeAttachLatestApkLinks(preparedEmail);
     const results = [];
 
     for (const batch of batches) {
@@ -291,13 +417,15 @@ router.post('/admin/email/send', async (req, res) => {
       adminUid: adminUser.uid,
       recipientCount: recipients.length,
       batchCount: batches.length,
-      subject: email.subject
+      subject: email.subject,
+      apkLinksIncluded: !!apkLinks
     });
 
     return res.json({
       success: true,
       recipientCount: recipients.length,
       batchCount: batches.length,
+      apkLinks,
       results
     });
   } catch (err) {
@@ -310,7 +438,7 @@ router.post('/admin/users/:uid/email', async (req, res) => {
   try {
     const { idToken } = req.body;
     const adminUser = await verifyAdminToken(idToken);
-    const email = cleanEmailPayload(req.body);
+    const preparedEmail = cleanEmailPayload(req.body);
     const missingConfig = validateEmailConfig();
 
     if (missingConfig.length) {
@@ -328,19 +456,22 @@ router.post('/admin/users/:uid/email', async (req, res) => {
     }
 
     const transporter = getEmailTransporter();
+    const { email, apkLinks } = await maybeAttachLatestApkLinks(preparedEmail);
     const result = await sendEmailMessage(transporter, [recipient], email);
 
     log('info', 'admin/users/:uid/email sent', {
       adminUid: adminUser.uid,
       targetUid: req.params.uid,
       recipient,
-      subject: email.subject
+      subject: email.subject,
+      apkLinksIncluded: !!apkLinks
     });
 
     return res.json({
       success: true,
       uid: req.params.uid,
       email: recipient,
+      apkLinks,
       result
     });
   } catch (err) {

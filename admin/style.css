@@ -640,6 +640,7 @@ img { vertical-align: middle; }
   color: #8a8fa0;
 }
 .form-hint.error { color: #ff4444; }
+.apk-links-preview { color: #7ddf96; }
 
 /* Toggle switch (used for boolean config fields like Enable Test Ads) */
 .toggle-row {
