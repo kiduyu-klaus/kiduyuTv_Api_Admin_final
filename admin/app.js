@@ -7,6 +7,7 @@ let searchQuery = '';
 let currentUserUid = null;
 let currentEmailUserUid = null;
 let latestApkLinks = null;
+const APK_BANNER_IMAGE_URL = 'https://raw.githubusercontent.com/kiduyu-klaus/KiduyuTv_final/main/app/src/main/res/mipmap-xhdpi/ic_banner.png';
 
 const firebaseConfig = {
   apiKey: "AIzaSyBLrg5egOOGrd3wyf5IBzPI2m9fHp_AR6k",
@@ -618,6 +619,121 @@ async function loadLatestApkLinksPreview(targetId) {
   }
 }
 
+function buildApkEmailSubject(apkLinks) {
+  return `Download the latest KiduyuTV app ${apkLinks?.tagName || ''}`.trim();
+}
+
+function buildApkEmailText(apkLinks) {
+  return [
+    'Hi,',
+    '',
+    'The latest KiduyuTV app release is ready to download. Choose the APK that matches your device.',
+    '',
+    `Latest release: ${apkLinks?.tagName || 'latest'}`,
+    '',
+    `Phone / Tablet APK: ${apkLinks?.phone?.url || ''}`,
+    `Android TV / Fire TV APK: ${apkLinks?.tv?.url || ''}`,
+    `Release page: ${apkLinks?.releaseUrl || ''}`,
+    '',
+    'If you were not expecting this message, you can ignore it.',
+    '',
+    'KiduyuTV'
+  ].join('\n');
+}
+
+function buildApkEmailHtml(apkLinks) {
+  const tagName = escapeHtml(apkLinks?.tagName || 'latest');
+  const phoneUrl = escapeHtml(apkLinks?.phone?.url || '#');
+  const tvUrl = escapeHtml(apkLinks?.tv?.url || '#');
+  const releaseUrl = escapeHtml(apkLinks?.releaseUrl || '#');
+  const bannerUrl = escapeHtml(APK_BANNER_IMAGE_URL);
+
+  return `<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="color-scheme" content="dark light">
+    <title>Download the latest KiduyuTV app</title>
+  </head>
+  <body style="margin:0;padding:0;background:#0F1117;font-family:Arial,Helvetica,sans-serif;color:#F4F6FA;">
+    <div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent;">
+      Download the latest KiduyuTV APK for phone, tablet, Android TV, or Fire TV.
+    </div>
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#0F1117;margin:0;padding:28px 12px;">
+      <tr>
+        <td align="center">
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" data-kiduyu-template="latest-apk-email" style="max-width:640px;background:#171A22;border:1px solid #282D3A;border-radius:18px;overflow:hidden;">
+            <tr>
+              <td style="padding:0;background:#0B0D12;">
+                <img src="${bannerUrl}" width="640" alt="KiduyuTV" style="display:block;width:100%;max-width:640px;height:auto;border:0;">
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:32px 28px 26px;">
+                <p style="margin:0 0 10px;color:#E50914;font-size:13px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;">Latest release ${tagName}</p>
+                <h1 style="margin:0 0 14px;color:#FFFFFF;font-size:28px;line-height:1.2;font-weight:700;">Download the latest KiduyuTV app</h1>
+                <p style="margin:0 0 18px;color:#D7DCE5;font-size:16px;line-height:1.6;">
+                  The latest KiduyuTV app release is ready. Choose the APK that matches your device.
+                </p>
+                <table role="presentation" cellspacing="0" cellpadding="0" style="margin:24px 0 8px;">
+                  <tr>
+                    <td style="padding:0 10px 12px 0;">
+                      <a href="${phoneUrl}" style="display:inline-block;background:#E50914;color:#FFFFFF;text-decoration:none;border-radius:10px;padding:14px 20px;font-size:15px;font-weight:700;">Download Phone APK</a>
+                    </td>
+                    <td style="padding:0 0 12px 0;">
+                      <a href="${tvUrl}" style="display:inline-block;background:#2B3342;color:#FFFFFF;text-decoration:none;border-radius:10px;padding:14px 20px;font-size:15px;font-weight:700;">Download TV APK</a>
+                    </td>
+                  </tr>
+                </table>
+                <p style="margin:14px 0 0;color:#A7AFBE;font-size:13px;line-height:1.6;">
+                  You can also view the full release page here:
+                  <a href="${releaseUrl}" style="color:#FFFFFF;text-decoration:underline;">KiduyuTV releases</a>.
+                </p>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:18px 28px;background:#11141B;border-top:1px solid #282D3A;">
+                <p style="margin:0;color:#8790A2;font-size:12px;line-height:1.6;">
+                  This message was sent by KiduyuTV. To keep delivery reliable, the APK files are linked directly instead of attached as large email files.
+                </p>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>`;
+}
+
+async function applyApkEmailTemplate({ subjectId, textId, htmlId, previewId }) {
+  if (!latestApkLinks) {
+    await loadLatestApkLinksPreview(previewId);
+  } else {
+    renderApkLinksPreview(previewId, latestApkLinks);
+  }
+
+  if (!latestApkLinks) return;
+
+  const subject = document.getElementById(subjectId);
+  const messageText = document.getElementById(textId);
+  const messageHtml = document.getElementById(htmlId);
+
+  if (subject && (!subject.value.trim() || subject.dataset.apkAutofilled === 'true')) {
+    subject.value = buildApkEmailSubject(latestApkLinks);
+    subject.dataset.apkAutofilled = 'true';
+  }
+  if (messageText && (!messageText.value.trim() || messageText.dataset.apkAutofilled === 'true')) {
+    messageText.value = buildApkEmailText(latestApkLinks);
+    messageText.dataset.apkAutofilled = 'true';
+  }
+  if (messageHtml && (!messageHtml.value.trim() || messageHtml.dataset.apkAutofilled === 'true')) {
+    messageHtml.value = buildApkEmailHtml(latestApkLinks);
+    messageHtml.dataset.apkAutofilled = 'true';
+  }
+}
+
 // ── SINGLE USER EMAIL ────────────────────────────────────────────────
 function setSingleEmailSummary(message, type = 'success') {
   const $summary = document.getElementById('singleEmailSummary');
@@ -647,9 +763,18 @@ function openSingleUserEmailModal({ uid, email, name }) {
   if (recipient) {
     recipient.textContent = `${name || 'User'} <${email}>`;
   }
-  if (subject) subject.value = '';
-  if (messageText) messageText.value = '';
-  if (messageHtml) messageHtml.value = '';
+  if (subject) {
+    subject.value = '';
+    subject.dataset.apkAutofilled = 'false';
+  }
+  if (messageText) {
+    messageText.value = '';
+    messageText.dataset.apkAutofilled = 'false';
+  }
+  if (messageHtml) {
+    messageHtml.value = '';
+    messageHtml.dataset.apkAutofilled = 'false';
+  }
   if (includeApkLinks) includeApkLinks.checked = false;
   if (summary) summary.style.display = 'none';
   loadLatestApkLinksPreview('singleApkLinksPreview');
@@ -723,6 +848,20 @@ document.getElementById('usersTableBody')?.addEventListener('click', (event) => 
 document.getElementById('closeSingleUserEmail')?.addEventListener('click', closeSingleUserEmailModal);
 document.getElementById('cancelSingleUserEmail')?.addEventListener('click', closeSingleUserEmailModal);
 document.getElementById('sendSingleUserEmail')?.addEventListener('click', sendSingleUserEmail);
+document.getElementById('singleIncludeApkLinks')?.addEventListener('change', (event) => {
+  if (!event.target.checked) return;
+  applyApkEmailTemplate({
+    subjectId: 'singleEmailSubject',
+    textId: 'singleEmailMessageText',
+    htmlId: 'singleEmailMessageHtml',
+    previewId: 'singleApkLinksPreview'
+  });
+});
+['singleEmailSubject', 'singleEmailMessageText', 'singleEmailMessageHtml'].forEach(id => {
+  document.getElementById(id)?.addEventListener('input', (event) => {
+    event.target.dataset.apkAutofilled = 'false';
+  });
+});
 document.getElementById('singleUserEmailModal')?.addEventListener('click', (event) => {
   if (event.target === document.getElementById('singleUserEmailModal')) {
     closeSingleUserEmailModal();
@@ -1519,6 +1658,9 @@ function clearEmailForm() {
   if (subject) subject.value = '';
   if (messageText) messageText.value = '';
   if (messageHtml) messageHtml.value = '';
+  if (subject) subject.dataset.apkAutofilled = 'false';
+  if (messageText) messageText.dataset.apkAutofilled = 'false';
+  if (messageHtml) messageHtml.dataset.apkAutofilled = 'false';
   if (includeApkLinks) includeApkLinks.checked = false;
   if (summary) summary.style.display = 'none';
   if (subject) subject.focus();
@@ -1582,6 +1724,20 @@ async function sendEmailToUsers() {
 document.getElementById('refreshEmailRecipients')?.addEventListener('click', loadEmailRecipientCount);
 document.getElementById('clearEmailForm')?.addEventListener('click', clearEmailForm);
 document.getElementById('sendEmailToUsers')?.addEventListener('click', sendEmailToUsers);
+document.getElementById('includeApkLinks')?.addEventListener('change', (event) => {
+  if (!event.target.checked) return;
+  applyApkEmailTemplate({
+    subjectId: 'emailSubject',
+    textId: 'emailMessageText',
+    htmlId: 'emailMessageHtml',
+    previewId: 'apkLinksPreview'
+  });
+});
+['emailSubject', 'emailMessageText', 'emailMessageHtml'].forEach(id => {
+  document.getElementById(id)?.addEventListener('input', (event) => {
+    event.target.dataset.apkAutofilled = 'false';
+  });
+});
 
 // ── LOGIN FORM ──────────────────────────────────────────────────────
 $loginForm.addEventListener('submit', async (e) => {

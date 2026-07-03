@@ -55,6 +55,7 @@ app.use((req, res, next) => {
 
 const router = express.Router();
 const GITHUB_RELEASES_API_URL = 'https://api.github.com/repos/kiduyu-klaus/KiduyuTv_final/releases/latest';
+const APK_BANNER_IMAGE_URL = 'https://raw.githubusercontent.com/kiduyu-klaus/KiduyuTv_final/main/app/src/main/res/mipmap-xhdpi/ic_banner.png';
 const APK_LINK_CACHE_TTL_MS = 5 * 60 * 1000;
 let latestApkLinksCache = null;
 
@@ -126,18 +127,19 @@ function validateEmailConfig() {
 }
 
 function cleanEmailPayload(body) {
+  const includeApkLinks = body.includeApkLinks === true || body.includeApkLinks === 'true';
   const cleanSubject = typeof body.subject === 'string' ? body.subject.trim() : '';
   const cleanText = typeof body.messageText === 'string' ? body.messageText.trim() : '';
   const cleanHtml = typeof body.messageHtml === 'string' ? body.messageHtml.trim() : '';
-  const includeApkLinks = body.includeApkLinks === true || body.includeApkLinks === 'true';
+  const subject = cleanSubject || (includeApkLinks ? 'Download the latest KiduyuTV app' : '');
 
-  if (!cleanSubject) {
+  if (!subject) {
     throw createHttpError(400, 'Email subject is required.');
   }
-  if (cleanSubject.length > 180) {
+  if (subject.length > 180) {
     throw createHttpError(400, 'Email subject must be 180 characters or fewer.');
   }
-  if (!cleanText && !cleanHtml) {
+  if (!includeApkLinks && !cleanText && !cleanHtml) {
     throw createHttpError(400, 'Email message is required.');
   }
   if (cleanText.length > 50000 || cleanHtml.length > 100000) {
@@ -145,7 +147,7 @@ function cleanEmailPayload(body) {
   }
 
   return {
-    subject: cleanSubject,
+    subject,
     text: cleanText,
     html: cleanHtml,
     includeApkLinks
@@ -225,49 +227,137 @@ function escapeHtmlValue(value) {
     .replace(/'/g, '&#039;');
 }
 
+function buildApkTextEmail(apkLinks, existingText = '') {
+  const intro = existingText.trim() || [
+    'Hi,',
+    '',
+    'The latest KiduyuTV app release is ready to download. Choose the APK that matches your device.'
+  ].join('\n');
+
+  return [
+    intro,
+    '',
+    `Latest release: ${apkLinks.tagName || 'latest'}`,
+    '',
+    `Phone / Tablet APK: ${apkLinks.phone.url}`,
+    `Android TV / Fire TV APK: ${apkLinks.tv.url}`,
+    `Release page: ${apkLinks.releaseUrl}`,
+    '',
+    'If you were not expecting this message, you can ignore it.',
+    '',
+    'KiduyuTV'
+  ].join('\n');
+}
+
+function buildApkHtmlEmail(apkLinks, existingHtml = '') {
+  const safeTag = escapeHtmlValue(apkLinks.tagName || 'latest');
+  const safePhoneUrl = escapeHtmlValue(apkLinks.phone.url);
+  const safeTvUrl = escapeHtmlValue(apkLinks.tv.url);
+  const safeReleaseUrl = escapeHtmlValue(apkLinks.releaseUrl);
+  const safeBannerUrl = escapeHtmlValue(process.env.APK_BANNER_IMAGE_URL || APK_BANNER_IMAGE_URL);
+  const intro = existingHtml.trim() || `
+    <p style="margin:0 0 18px;color:#D7DCE5;font-size:16px;line-height:1.6;">
+      The latest KiduyuTV app release is ready. Choose the APK that matches your device.
+    </p>
+  `;
+
+  return `<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="color-scheme" content="dark light">
+    <title>Download the latest KiduyuTV app</title>
+  </head>
+  <body style="margin:0;padding:0;background:#0F1117;font-family:Arial,Helvetica,sans-serif;color:#F4F6FA;">
+    <div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent;">
+      Download the latest KiduyuTV APK for phone, tablet, Android TV, or Fire TV.
+    </div>
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#0F1117;margin:0;padding:28px 12px;">
+      <tr>
+        <td align="center">
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" data-kiduyu-template="latest-apk-email" style="max-width:640px;background:#171A22;border:1px solid #282D3A;border-radius:18px;overflow:hidden;">
+            <tr>
+              <td style="padding:0;background:#0B0D12;">
+                <img src="${safeBannerUrl}" width="640" alt="KiduyuTV" style="display:block;width:100%;max-width:640px;height:auto;border:0;">
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:32px 28px 26px;">
+                <p style="margin:0 0 10px;color:#E50914;font-size:13px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;">Latest release ${safeTag}</p>
+                <h1 style="margin:0 0 14px;color:#FFFFFF;font-size:28px;line-height:1.2;font-weight:700;">Download the latest KiduyuTV app</h1>
+                ${intro}
+                <table role="presentation" cellspacing="0" cellpadding="0" style="margin:24px 0 8px;">
+                  <tr>
+                    <td style="padding:0 10px 12px 0;">
+                      <a href="${safePhoneUrl}" style="display:inline-block;background:#E50914;color:#FFFFFF;text-decoration:none;border-radius:10px;padding:14px 20px;font-size:15px;font-weight:700;">Download Phone APK</a>
+                    </td>
+                    <td style="padding:0 0 12px 0;">
+                      <a href="${safeTvUrl}" style="display:inline-block;background:#2B3342;color:#FFFFFF;text-decoration:none;border-radius:10px;padding:14px 20px;font-size:15px;font-weight:700;">Download TV APK</a>
+                    </td>
+                  </tr>
+                </table>
+                <p style="margin:14px 0 0;color:#A7AFBE;font-size:13px;line-height:1.6;">
+                  You can also view the full release page here:
+                  <a href="${safeReleaseUrl}" style="color:#FFFFFF;text-decoration:underline;">KiduyuTV releases</a>.
+                </p>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:18px 28px;background:#11141B;border-top:1px solid #282D3A;">
+                <p style="margin:0;color:#8790A2;font-size:12px;line-height:1.6;">
+                  This message was sent by KiduyuTV. To keep delivery reliable, the APK files are linked directly instead of attached as large email files.
+                </p>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>`;
+}
+
 async function maybeAttachLatestApkLinks(email) {
   if (!email.includeApkLinks) return { email, apkLinks: null };
 
   const apkLinks = await getLatestApkLinks();
-  const textBlock = [
-    '',
-    '',
-    `KiduyuTV latest APK downloads (${apkLinks.tagName || 'latest'}):`,
-    `Phone / Tablet: ${apkLinks.phone.url}`,
-    `Android TV / Fire TV: ${apkLinks.tv.url}`,
-    `Release page: ${apkLinks.releaseUrl}`
-  ].join('\n');
-
-  const htmlBlock = `
-    <hr>
-    <p><strong>KiduyuTV latest APK downloads (${escapeHtmlValue(apkLinks.tagName || 'latest')}):</strong></p>
-    <ul>
-      <li><a href="${escapeHtmlValue(apkLinks.phone.url)}">Phone / Tablet APK</a></li>
-      <li><a href="${escapeHtmlValue(apkLinks.tv.url)}">Android TV / Fire TV APK</a></li>
-      <li><a href="${escapeHtmlValue(apkLinks.releaseUrl)}">Release page</a></li>
-    </ul>
-  `;
+  const hasGeneratedHtml = email.html.includes('data-kiduyu-template="latest-apk-email"');
 
   return {
     apkLinks,
     email: {
       ...email,
-      text: `${email.text || ''}${textBlock}`,
-      html: email.html ? `${email.html}${htmlBlock}` : email.html
+      text: buildApkTextEmail(apkLinks, email.text),
+      html: hasGeneratedHtml ? email.html : buildApkHtmlEmail(apkLinks, email.html)
     }
   };
 }
 
 async function sendEmailMessage(transporter, recipients, email, { bcc = false } = {}) {
-  const info = await transporter.sendMail({
+  const message = {
     from: process.env.EMAIL_FROM,
     replyTo: process.env.EMAIL_REPLY_TO || process.env.EMAIL_FROM,
     to: bcc ? process.env.EMAIL_FROM : recipients,
     bcc: bcc ? recipients : undefined,
     subject: email.subject,
     text: email.text || undefined,
-    html: email.html || undefined
-  });
+    html: email.html || undefined,
+    headers: {
+      'X-Auto-Response-Suppress': 'All'
+    }
+  };
+
+  if (process.env.EMAIL_UNSUBSCRIBE_URL) {
+    message.list = {
+      unsubscribe: {
+        url: process.env.EMAIL_UNSUBSCRIBE_URL,
+        comment: 'Unsubscribe from KiduyuTV email updates'
+      }
+    };
+  }
+
+  const info = await transporter.sendMail(message);
 
   return {
     messageId: info.messageId,
