@@ -7,7 +7,7 @@ let searchQuery = '';
 let currentUserUid = null;
 let currentEmailUserUid = null;
 let latestApkLinks = null;
-const APK_BANNER_IMAGE_URL = 'https://raw.githubusercontent.com/kiduyu-klaus/KiduyuTv_final/main/app/src/main/res/mipmap-xhdpi/ic_banner.png';
+const APK_BANNER_IMAGE_URL = 'https://cdn.jsdelivr.net/gh/kiduyu-klaus/KiduyuTv_final@main/app/src/main/res/mipmap-xhdpi/ic_banner.png';
 
 const firebaseConfig = {
   apiKey: "AIzaSyBLrg5egOOGrd3wyf5IBzPI2m9fHp_AR6k",
@@ -654,51 +654,127 @@ function buildApkEmailHtml(apkLinks) {
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="color-scheme" content="dark light">
+    <meta name="supported-color-schemes" content="dark light">
     <title>Download the latest KiduyuTV app</title>
+    <!--[if mso]>
+    <noscript>
+      <xml>
+        <o:OfficeDocumentSettings>
+          <o:PixelsPerInch>96</o:PixelsPerInch>
+        </o:OfficeDocumentSettings>
+      </xml>
+    </noscript>
+    <![endif]-->
+    <style>
+      @media only screen and (max-width: 600px) {
+        .container { width: 100% !important; border-radius: 0 !important; }
+        .stack-col { display: block !important; width: 100% !important; padding-right: 0 !important; padding-bottom: 12px !important; }
+        .btn-cell { display: block !important; width: 100% !important; }
+        .btn { display: block !important; width: 100% !important; box-sizing: border-box; }
+        .hero-pad { padding: 26px 20px 22px !important; }
+        .hero-title { font-size: 23px !important; }
+      }
+    </style>
   </head>
-  <body style="margin:0;padding:0;background:#0F1117;font-family:Arial,Helvetica,sans-serif;color:#F4F6FA;">
+  <body style="margin:0;padding:0;background:#0B0D12;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#F4F6FA;">
     <div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent;">
-      Download the latest KiduyuTV APK for phone, tablet, Android TV, or Fire TV.
+      KiduyuTV ${tagName} is live - grab the phone or TV build directly, no attachments needed.
     </div>
-    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#0F1117;margin:0;padding:28px 12px;">
+
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#0B0D12;margin:0;padding:32px 12px;">
       <tr>
         <td align="center">
-          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" data-kiduyu-template="latest-apk-email" style="max-width:640px;background:#171A22;border:1px solid #282D3A;border-radius:18px;overflow:hidden;">
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" class="container" data-kiduyu-template="latest-apk-email" style="max-width:600px;background:#14161D;border:1px solid #23262F;border-radius:20px;overflow:hidden;">
+
             <tr>
-              <td style="padding:0;background:#0B0D12;">
-                <img src="${bannerUrl}" width="640" alt="KiduyuTV" style="display:block;width:100%;max-width:640px;height:auto;border:0;">
-              </td>
-            </tr>
-            <tr>
-              <td style="padding:32px 28px 26px;">
-                <p style="margin:0 0 10px;color:#E50914;font-size:13px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;">Latest release ${tagName}</p>
-                <h1 style="margin:0 0 14px;color:#FFFFFF;font-size:28px;line-height:1.2;font-weight:700;">Download the latest KiduyuTV app</h1>
-                <p style="margin:0 0 18px;color:#D7DCE5;font-size:16px;line-height:1.6;">
-                  The latest KiduyuTV app release is ready. Choose the APK that matches your device.
-                </p>
-                <table role="presentation" cellspacing="0" cellpadding="0" style="margin:24px 0 8px;">
+              <td style="padding:0;background:#E50914;">
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
                   <tr>
-                    <td style="padding:0 10px 12px 0;">
-                      <a href="${phoneUrl}" style="display:inline-block;background:#E50914;color:#FFFFFF;text-decoration:none;border-radius:10px;padding:14px 20px;font-size:15px;font-weight:700;">Download Phone APK</a>
+                    <td style="padding:22px 28px;">
+                      <span style="font-size:15px;font-weight:800;letter-spacing:.06em;color:#FFFFFF;text-transform:uppercase;">KiduyuTV</span>
                     </td>
-                    <td style="padding:0 0 12px 0;">
-                      <a href="${tvUrl}" style="display:inline-block;background:#2B3342;color:#FFFFFF;text-decoration:none;border-radius:10px;padding:14px 20px;font-size:15px;font-weight:700;">Download TV APK</a>
+                    <td align="right" style="padding:22px 28px;">
+                      <span style="font-size:12px;font-weight:700;color:#FFFFFF;background:#B00610;padding:6px 12px;border-radius:100px;">${tagName}</span>
                     </td>
                   </tr>
                 </table>
-                <p style="margin:14px 0 0;color:#A7AFBE;font-size:13px;line-height:1.6;">
-                  You can also view the full release page here:
-                  <a href="${releaseUrl}" style="color:#FFFFFF;text-decoration:underline;">KiduyuTV releases</a>.
-                </p>
               </td>
             </tr>
+
             <tr>
-              <td style="padding:18px 28px;background:#11141B;border-top:1px solid #282D3A;">
-                <p style="margin:0;color:#8790A2;font-size:12px;line-height:1.6;">
-                  This message was sent by KiduyuTV. To keep delivery reliable, the APK files are linked directly instead of attached as large email files.
+              <td style="padding:0;">
+                <img src="${bannerUrl}" width="600" alt="KiduyuTV" style="display:block;width:100%;max-width:600px;height:auto;border:0;">
+              </td>
+            </tr>
+
+            <tr>
+              <td class="hero-pad" style="padding:36px 28px 8px;">
+                <h1 class="hero-title" style="margin:0 0 12px;color:#FFFFFF;font-size:26px;line-height:1.25;font-weight:800;">
+                  A new release just dropped
+                </h1>
+                <p style="margin:0 0 26px;color:#B7BECC;font-size:15.5px;line-height:1.65;">
+                  Faster playback, fewer bugs, better stability. Pick the build that matches your device below - takes about 30 seconds.
                 </p>
               </td>
             </tr>
+
+            <tr>
+              <td style="padding:0 28px 8px;">
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+                  <tr>
+                    <td class="stack-col" width="50%" style="padding:0 8px 12px 0;vertical-align:top;">
+                      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#1B1E27;border:1px solid #2A2E3A;border-radius:14px;">
+                        <tr>
+                          <td style="padding:20px;">
+                            <p style="margin:0 0 4px;color:#8A93A6;font-size:11.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;">For Phone &amp; Tablet</p>
+                            <p style="margin:0 0 16px;color:#EDEFF4;font-size:14px;line-height:1.5;">Android phones and tablets</p>
+                            <a href="${phoneUrl}" class="btn" style="display:inline-block;background:#E50914;color:#FFFFFF;text-decoration:none;border-radius:10px;padding:12px 18px;font-size:14px;font-weight:700;">Download &rarr;</a>
+                          </td>
+                        </tr>
+                      </table>
+                    </td>
+                    <td class="stack-col" width="50%" style="padding:0 0 12px 8px;vertical-align:top;">
+                      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#1B1E27;border:1px solid #2A2E3A;border-radius:14px;">
+                        <tr>
+                          <td style="padding:20px;">
+                            <p style="margin:0 0 4px;color:#8A93A6;font-size:11.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;">For TV</p>
+                            <p style="margin:0 0 16px;color:#EDEFF4;font-size:14px;line-height:1.5;">Android TV and Fire TV</p>
+                            <a href="${tvUrl}" class="btn" style="display:inline-block;background:#2B3342;color:#FFFFFF;text-decoration:none;border-radius:10px;padding:12px 18px;font-size:14px;font-weight:700;">Download &rarr;</a>
+                          </td>
+                        </tr>
+                      </table>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+
+            <tr>
+              <td style="padding:8px 28px 34px;">
+                <p style="margin:0;color:#8A93A6;font-size:13.5px;line-height:1.6;">
+                  Want the full changelog first? <a href="${releaseUrl}" style="color:#FF6B73;text-decoration:underline;font-weight:600;">View the release notes</a>
+                </p>
+              </td>
+            </tr>
+
+            <tr>
+              <td style="padding:0 28px;">
+                <div style="border-top:1px solid #23262F;"></div>
+              </td>
+            </tr>
+
+            <tr>
+              <td style="padding:22px 28px 28px;">
+                <p style="margin:0 0 10px;color:#6E7686;font-size:12px;line-height:1.7;">
+                  APKs are linked directly rather than attached, to keep this email small and delivery reliable. Files are hosted on GitHub Releases.
+                </p>
+                <p style="margin:0;color:#6E7686;font-size:12px;line-height:1.7;">
+                  You're receiving this because you have a KiduyuTV account.
+                  <a href="%unsubscribe_url%" style="color:#8A93A6;text-decoration:underline;">Unsubscribe</a>
+                </p>
+              </td>
+            </tr>
+
           </table>
         </td>
       </tr>
