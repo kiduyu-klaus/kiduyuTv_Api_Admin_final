@@ -5,6 +5,7 @@ let currentPage = 1;
 let totalPages = 1;
 let searchQuery = '';
 let currentUserUid = null;
+let currentEmailUserUid = null;
 
 const firebaseConfig = {
   apiKey: "AIzaSyBLrg5egOOGrd3wyf5IBzPI2m9fHp_AR6k",
@@ -214,6 +215,7 @@ document.querySelectorAll('.nav-item').forEach(item => {
     if (tab === 'analytics') loadAnalytics();
     if (tab === 'currentSettings') loadCurrentSettings();
     if (tab === 'users') loadUsers();
+    if (tab === 'sendEmail') loadEmailRecipientCount();
     if (tab === 'settings') {
       checkApiStatus();
       ['streaming', 'api', 'ads', 'filters', 'network', 'features', 'app_packagenames', 'home_dialog'].forEach(loadConfigSection);
@@ -314,7 +316,7 @@ function renderRecentUsers(users) {
 // ── USERS TABLE ─────────────────────────────────────────────────────
 async function loadUsers(page = 1, search = '') {
   const tbody = document.getElementById('usersTableBody');
-  tbody.innerHTML = '<tr><td colspan="10" class="table-loading">Loading...</td></tr>';
+  tbody.innerHTML = '<tr><td colspan="11" class="table-loading">Loading...</td></tr>';
   try {
     const res = await apiCall('GET', `/admin/users?idToken=${encodeURIComponent(idToken)}&page=${page}&limit=20&search=${encodeURIComponent(search)}`);
     renderUsersTable(res.users || []);
@@ -322,14 +324,14 @@ async function loadUsers(page = 1, search = '') {
     totalPages = res.totalPages;
     updatePagination();
   } catch (err) {
-    tbody.innerHTML = `<tr><td colspan="10" class="table-loading" style="color:#ff4444">${escapeHtml(err.message)}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="11" class="table-loading" style="color:#ff4444">${escapeHtml(err.message)}</td></tr>`;
   }
 }
 
 function renderUsersTable(users) {
   const tbody = document.getElementById('usersTableBody');
   if (!users.length) {
-    tbody.innerHTML = '<tr><td colspan="10" class="table-loading">No users found</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="11" class="table-loading">No users found</td></tr>';
     return;
   }
   tbody.innerHTML = users.map(user => `
@@ -344,6 +346,18 @@ function renderUsersTable(users) {
         </div>
       </td>
       <td style="color:#8a8fa0;font-size:12px">${escapeHtml(user.email)}</td>
+      <td>
+        ${user.email && user.email !== 'N/A' ? `
+          <button
+            class="btn-email-user"
+            type="button"
+            data-email-user
+            data-uid="${escapeHtml(user.uid)}"
+            data-email="${escapeHtml(user.email)}"
+            data-name="${escapeHtml(user.displayName || 'User')}"
+          >Email</button>
+        ` : '<span class="email-unavailable">No email</span>'}
+      </td>
       <td style="font-size:12px;color:#8a8fa0">${formatDate(user.createdAt)}</td>
       <td style="font-size:12px;color:#8a8fa0">${formatRelativeTime(user.lastLoginAt)}</td>
       <td style="text-align:center"><span style="color:#E50914;font-weight:600;font-size:13px">${user.myListCount || 0}</span></td>
@@ -558,6 +572,111 @@ document.getElementById('deleteUserData').addEventListener('click', async () => 
     loadUsers(currentPage, searchQuery);
   } catch (err) {
     showToast(err.message, 'error');
+  }
+});
+
+// ── SINGLE USER EMAIL ────────────────────────────────────────────────
+function setSingleEmailSummary(message, type = 'success') {
+  const $summary = document.getElementById('singleEmailSummary');
+  if (!$summary) return;
+
+  $summary.textContent = message;
+  $summary.className = `email-send-summary${type === 'error' ? ' error' : ''}`;
+  $summary.style.display = 'block';
+}
+
+function closeSingleUserEmailModal() {
+  document.getElementById('singleUserEmailModal')?.classList.remove('active');
+  currentEmailUserUid = null;
+}
+
+function openSingleUserEmailModal({ uid, email, name }) {
+  currentEmailUserUid = uid;
+
+  const modal = document.getElementById('singleUserEmailModal');
+  const recipient = document.getElementById('singleEmailRecipient');
+  const subject = document.getElementById('singleEmailSubject');
+  const messageText = document.getElementById('singleEmailMessageText');
+  const messageHtml = document.getElementById('singleEmailMessageHtml');
+  const summary = document.getElementById('singleEmailSummary');
+
+  if (recipient) {
+    recipient.textContent = `${name || 'User'} <${email}>`;
+  }
+  if (subject) subject.value = '';
+  if (messageText) messageText.value = '';
+  if (messageHtml) messageHtml.value = '';
+  if (summary) summary.style.display = 'none';
+
+  modal?.classList.add('active');
+  subject?.focus();
+}
+
+async function sendSingleUserEmail() {
+  if (!currentEmailUserUid) return;
+
+  const $btn = document.getElementById('sendSingleUserEmail');
+  const subject = document.getElementById('singleEmailSubject')?.value.trim() || '';
+  const messageText = document.getElementById('singleEmailMessageText')?.value.trim() || '';
+  const messageHtml = document.getElementById('singleEmailMessageHtml')?.value.trim() || '';
+
+  if (!subject) {
+    showToast('Email subject is required', 'error');
+    return;
+  }
+  if (!messageText && !messageHtml) {
+    showToast('Email message is required', 'error');
+    return;
+  }
+
+  const confirmed = await showConfirm('Send Email', 'Send this email to this user?');
+  if (!confirmed) return;
+
+  const original = $btn ? $btn.innerHTML : '';
+
+  try {
+    if ($btn) {
+      $btn.disabled = true;
+      $btn.textContent = 'Sending...';
+    }
+
+    const result = await apiCall('POST', `/admin/users/${encodeURIComponent(currentEmailUserUid)}/email`, {
+      idToken,
+      subject,
+      messageText,
+      messageHtml
+    });
+
+    setSingleEmailSummary(`Email sent to ${result.email}`);
+    showToast('Email sent successfully', 'success');
+  } catch (err) {
+    setSingleEmailSummary(err.message, 'error');
+    showToast(err.message, 'error');
+  } finally {
+    if ($btn) {
+      $btn.disabled = false;
+      $btn.innerHTML = original;
+    }
+  }
+}
+
+document.getElementById('usersTableBody')?.addEventListener('click', (event) => {
+  const btn = event.target.closest('[data-email-user]');
+  if (!btn) return;
+
+  openSingleUserEmailModal({
+    uid: btn.dataset.uid,
+    email: btn.dataset.email,
+    name: btn.dataset.name
+  });
+});
+
+document.getElementById('closeSingleUserEmail')?.addEventListener('click', closeSingleUserEmailModal);
+document.getElementById('cancelSingleUserEmail')?.addEventListener('click', closeSingleUserEmailModal);
+document.getElementById('sendSingleUserEmail')?.addEventListener('click', sendSingleUserEmail);
+document.getElementById('singleUserEmailModal')?.addEventListener('click', (event) => {
+  if (event.target === document.getElementById('singleUserEmailModal')) {
+    closeSingleUserEmailModal();
   }
 });
 
@@ -1315,6 +1434,100 @@ function clearProvidersForm() {
 
 document.getElementById('addProviderBtn')?.addEventListener('click', addProvider);
 document.getElementById('clearProvidersConfig')?.addEventListener('click', clearProvidersForm);
+
+// ── SEND EMAIL ───────────────────────────────────────────────────────
+async function loadEmailRecipientCount() {
+  const $count = document.getElementById('emailRecipientCount');
+  if (!$count) return;
+
+  $count.textContent = 'Loading...';
+
+  try {
+    const data = await apiCall('GET', `/admin/email/recipients?idToken=${encodeURIComponent(idToken)}`);
+    $count.textContent = `${data.count || 0} users`;
+  } catch (err) {
+    $count.textContent = 'Failed to load';
+    showToast(err.message, 'error');
+  }
+}
+
+function setEmailSummary(message, type = 'success') {
+  const $summary = document.getElementById('emailSendSummary');
+  if (!$summary) return;
+
+  $summary.textContent = message;
+  $summary.className = `email-send-summary${type === 'error' ? ' error' : ''}`;
+  $summary.style.display = 'block';
+}
+
+function clearEmailForm() {
+  const subject = document.getElementById('emailSubject');
+  const messageText = document.getElementById('emailMessageText');
+  const messageHtml = document.getElementById('emailMessageHtml');
+  const summary = document.getElementById('emailSendSummary');
+
+  if (subject) subject.value = '';
+  if (messageText) messageText.value = '';
+  if (messageHtml) messageHtml.value = '';
+  if (summary) summary.style.display = 'none';
+  if (subject) subject.focus();
+}
+
+async function sendEmailToUsers() {
+  const $btn = document.getElementById('sendEmailToUsers');
+  const subject = document.getElementById('emailSubject')?.value.trim() || '';
+  const messageText = document.getElementById('emailMessageText')?.value.trim() || '';
+  const messageHtml = document.getElementById('emailMessageHtml')?.value.trim() || '';
+
+  if (!subject) {
+    showToast('Email subject is required', 'error');
+    return;
+  }
+
+  if (!messageText && !messageHtml) {
+    showToast('Email message is required', 'error');
+    return;
+  }
+
+  const confirmed = await showConfirm(
+    'Send Email',
+    'Send this email to all registered users with email addresses?'
+  );
+  if (!confirmed) return;
+
+  const original = $btn ? $btn.innerHTML : '';
+
+  try {
+    if ($btn) {
+      $btn.disabled = true;
+      $btn.textContent = 'Sending...';
+    }
+
+    const result = await apiCall('POST', '/admin/email/send', {
+      idToken,
+      subject,
+      messageText,
+      messageHtml
+    });
+
+    const summary = `Email sent to ${result.recipientCount || 0} users in ${result.batchCount || 0} batches.`;
+    setEmailSummary(summary);
+    showToast('Email sent successfully', 'success');
+    loadEmailRecipientCount();
+  } catch (err) {
+    setEmailSummary(err.message, 'error');
+    showToast(err.message, 'error');
+  } finally {
+    if ($btn) {
+      $btn.disabled = false;
+      $btn.innerHTML = original;
+    }
+  }
+}
+
+document.getElementById('refreshEmailRecipients')?.addEventListener('click', loadEmailRecipientCount);
+document.getElementById('clearEmailForm')?.addEventListener('click', clearEmailForm);
+document.getElementById('sendEmailToUsers')?.addEventListener('click', sendEmailToUsers);
 
 // ── LOGIN FORM ──────────────────────────────────────────────────────
 $loginForm.addEventListener('submit', async (e) => {

@@ -121,6 +121,13 @@
           </svg>
           Settings
         </a>
+        <a href="#" class="nav-item" data-tab="sendEmail">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="5" width="18" height="14" rx="2"/>
+            <polyline points="3 7 12 13 21 7"/>
+          </svg>
+          Send Email
+        </a>
       </nav>
       <div class="sidebar-footer">
         <div class="user-info">
@@ -270,6 +277,7 @@
               <tr>
                 <th>User</th>
                 <th>Email</th>
+                <th>Send Email</th>
                 <th>Joined</th>
                 <th>Last Login</th>
                 <th>My List</th>
@@ -281,7 +289,7 @@
               </tr>
             </thead>
             <tbody id="usersTableBody">
-              <tr><td colspan="10" class="table-loading">Loading users...</td></tr>
+              <tr><td colspan="11" class="table-loading">Loading users...</td></tr>
             </tbody>
           </table>
         </div>
@@ -302,6 +310,44 @@
           </button>
         </div>
       </section>
+
+      <!-- Single User Email Modal -->
+      <div id="singleUserEmailModal" class="modal">
+        <div class="modal-content" style="max-width: 640px">
+          <div class="modal-header">
+            <div class="modal-user-info">
+              <div>
+                <h3>Send Email</h3>
+                <span id="singleEmailRecipient" class="detail-email"></span>
+              </div>
+            </div>
+            <button class="modal-close" id="closeSingleUserEmail">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+              </svg>
+            </button>
+          </div>
+          <div class="modal-body">
+            <div class="form-group">
+              <label for="singleEmailSubject">Subject</label>
+              <input type="text" id="singleEmailSubject" placeholder="Important update from KiduyuTV" maxlength="180" autocomplete="off">
+            </div>
+            <div class="form-group">
+              <label for="singleEmailMessageText">Plain Text Message</label>
+              <textarea id="singleEmailMessageText" rows="7" placeholder="Write the email message..."></textarea>
+            </div>
+            <div class="form-group">
+              <label for="singleEmailMessageHtml">HTML Message Optional</label>
+              <textarea id="singleEmailMessageHtml" rows="7" placeholder="<p>Write optional HTML email content...</p>"></textarea>
+            </div>
+            <div id="singleEmailSummary" class="email-send-summary" style="display:none"></div>
+          </div>
+          <div class="modal-footer">
+            <button id="cancelSingleUserEmail" class="btn-secondary" type="button">Cancel</button>
+            <button id="sendSingleUserEmail" class="btn-primary" type="button">Send Email</button>
+          </div>
+        </div>
+      </div>
 
       <!-- User Detail Modal -->
       <div id="userDetailModal" class="modal">
@@ -796,6 +842,49 @@
             <p><strong>KiduyuTV Admin Panel</strong></p>
             <p>Version 1.0.0</p>
             <p>Built with Firebase Admin SDK + Express.js</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Send Email Tab -->
+      <section id="sendEmailTab" class="tab-content">
+        <div class="tab-header">
+          <h2>Send Email</h2>
+          <p class="tab-subtitle">Send one email campaign to all registered users with email addresses</p>
+        </div>
+
+        <div class="settings-section">
+          <h3>Email Campaign</h3>
+          <p class="settings-desc">Recipients are collected from Firebase Auth users with email addresses. Delivery uses BCC batches so users cannot see each other.</p>
+
+          <div class="settings-info email-recipients-info">
+            <div class="info-item">
+              <span class="info-label">Eligible recipients:</span>
+              <code id="emailRecipientCount">Not loaded</code>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="emailSubject">Subject</label>
+            <input type="text" id="emailSubject" placeholder="Important update from KiduyuTV" maxlength="180" autocomplete="off">
+          </div>
+
+          <div class="form-group">
+            <label for="emailMessageText">Plain Text Message</label>
+            <textarea id="emailMessageText" rows="8" placeholder="Write the email message..."></textarea>
+          </div>
+
+          <div class="form-group">
+            <label for="emailMessageHtml">HTML Message Optional</label>
+            <textarea id="emailMessageHtml" rows="8" placeholder="<p>Write optional HTML email content...</p>"></textarea>
+          </div>
+
+          <div id="emailSendSummary" class="email-send-summary" style="display:none"></div>
+
+          <div class="settings-actions">
+            <button id="refreshEmailRecipients" class="btn-secondary" type="button">Refresh Count</button>
+            <button id="clearEmailForm" class="btn-secondary" type="button">Clear</button>
+            <button id="sendEmailToUsers" class="btn-primary" type="button">Send Email</button>
           </div>
         </div>
       </section>

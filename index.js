@@ -1,8 +1,10 @@
+require('dotenv').config();
 const express = require('express');
 const path = require('path');
 const fs = require('fs');
 const cors = require('cors');
 const admin = require('firebase-admin');
+const nodemailer = require('nodemailer');
 
 // ── INITIALISE FIREBASE ADMIN ─────────────────────────────────────
 
@@ -52,6 +54,116 @@ app.use((req, res, next) => {
 // ── ROUTER ───────────────────────────────────────────────────────
 
 const router = express.Router();
+
+function createHttpError(statusCode, message) {
+  const err = new Error(message);
+  err.statusCode = statusCode;
+  return err;
+}
+
+async function verifyAdminToken(idToken) {
+  if (!idToken) {
+    throw createHttpError(400, 'Missing idToken.');
+  }
+
+  const decoded = await admin.auth().verifyIdToken(idToken);
+  const adminDoc = await admin.firestore().collection('admins').doc(decoded.uid).get();
+
+  if (!adminDoc.exists) {
+    throw createHttpError(403, 'Not an admin.');
+  }
+
+  return decoded;
+}
+
+async function listAllUsersWithEmails() {
+  const emails = new Set();
+  let pageToken;
+
+  do {
+    const result = await admin.auth().listUsers(1000, pageToken);
+
+    for (const user of result.users) {
+      if (user.email && !user.disabled) {
+        emails.add(user.email.trim().toLowerCase());
+      }
+    }
+
+    pageToken = result.pageToken;
+  } while (pageToken);
+
+  return Array.from(emails).sort();
+}
+
+function chunkArray(items, size) {
+  const chunks = [];
+  for (let i = 0; i < items.length; i += size) {
+    chunks.push(items.slice(i, i + size));
+  }
+  return chunks;
+}
+
+function getEmailTransporter() {
+  const port = Number(process.env.SMTP_PORT || 465);
+
+  return nodemailer.createTransport({
+    host: process.env.SMTP_HOST,
+    port,
+    secure: process.env.SMTP_SECURE !== 'false',
+    auth: {
+      user: process.env.SMTP_USER,
+      pass: process.env.SMTP_PASS
+    }
+  });
+}
+
+function validateEmailConfig() {
+  const required = ['SMTP_HOST', 'SMTP_USER', 'SMTP_PASS', 'EMAIL_FROM'];
+  return required.filter(key => !process.env[key]);
+}
+
+function cleanEmailPayload(body) {
+  const cleanSubject = typeof body.subject === 'string' ? body.subject.trim() : '';
+  const cleanText = typeof body.messageText === 'string' ? body.messageText.trim() : '';
+  const cleanHtml = typeof body.messageHtml === 'string' ? body.messageHtml.trim() : '';
+
+  if (!cleanSubject) {
+    throw createHttpError(400, 'Email subject is required.');
+  }
+  if (cleanSubject.length > 180) {
+    throw createHttpError(400, 'Email subject must be 180 characters or fewer.');
+  }
+  if (!cleanText && !cleanHtml) {
+    throw createHttpError(400, 'Email message is required.');
+  }
+  if (cleanText.length > 50000 || cleanHtml.length > 100000) {
+    throw createHttpError(400, 'Email message is too large.');
+  }
+
+  return {
+    subject: cleanSubject,
+    text: cleanText,
+    html: cleanHtml
+  };
+}
+
+async function sendEmailMessage(transporter, recipients, email, { bcc = false } = {}) {
+  const info = await transporter.sendMail({
+    from: process.env.EMAIL_FROM,
+    replyTo: process.env.EMAIL_REPLY_TO || process.env.EMAIL_FROM,
+    to: bcc ? process.env.EMAIL_FROM : recipients,
+    bcc: bcc ? recipients : undefined,
+    subject: email.subject,
+    text: email.text || undefined,
+    html: email.html || undefined
+  });
+
+  return {
+    messageId: info.messageId,
+    accepted: Array.isArray(info.accepted) ? info.accepted.length : 0,
+    rejected: Array.isArray(info.rejected) ? info.rejected.length : 0
+  };
+}
 
 // Health check
 router.get('/health', (req, res) => {
@@ -131,6 +243,109 @@ router.post('/admin/verify', async (req, res) => {
   } catch (err) {
     log('error', err.message, { endpoint: '/api/admin/verify', stack: err.stack });
     return res.status(500).json({ error: err.message });
+  }
+});
+
+router.get('/admin/email/recipients', async (req, res) => {
+  try {
+    await verifyAdminToken(req.query.idToken);
+    const emails = await listAllUsersWithEmails();
+
+    log('info', 'admin/email/recipients counted', { count: emails.length });
+    return res.json({ success: true, count: emails.length });
+  } catch (err) {
+    log('error', err.message, { endpoint: '/api/admin/email/recipients', stack: err.stack });
+    return res.status(err.statusCode || 500).json({ error: err.message });
+  }
+});
+
+router.post('/admin/email/send', async (req, res) => {
+  try {
+    const { idToken } = req.body;
+    const adminUser = await verifyAdminToken(idToken);
+    const email = cleanEmailPayload(req.body);
+
+    const missingConfig = validateEmailConfig();
+    if (missingConfig.length) {
+      return res.status(500).json({ error: `Missing email config: ${missingConfig.join(', ')}` });
+    }
+
+    const recipients = await listAllUsersWithEmails();
+    if (!recipients.length) {
+      return res.status(400).json({ error: 'No registered users with email addresses found.' });
+    }
+
+    const parsedBatchSize = Number(process.env.EMAIL_BATCH_SIZE || 50);
+    const batchSize = Number.isFinite(parsedBatchSize) && parsedBatchSize > 0
+      ? Math.min(Math.floor(parsedBatchSize))
+      : 50;
+    const batches = chunkArray(recipients, batchSize);
+    const transporter = getEmailTransporter();
+    const results = [];
+
+    for (const batch of batches) {
+      results.push(await sendEmailMessage(transporter, batch, email, { bcc: true }));
+    }
+
+    log('info', 'admin/email/send completed', {
+      adminUid: adminUser.uid,
+      recipientCount: recipients.length,
+      batchCount: batches.length,
+      subject: email.subject
+    });
+
+    return res.json({
+      success: true,
+      recipientCount: recipients.length,
+      batchCount: batches.length,
+      results
+    });
+  } catch (err) {
+    log('error', err.message, { endpoint: '/api/admin/email/send', stack: err.stack });
+    return res.status(err.statusCode || 500).json({ error: err.message });
+  }
+});
+
+router.post('/admin/users/:uid/email', async (req, res) => {
+  try {
+    const { idToken } = req.body;
+    const adminUser = await verifyAdminToken(idToken);
+    const email = cleanEmailPayload(req.body);
+    const missingConfig = validateEmailConfig();
+
+    if (missingConfig.length) {
+      return res.status(500).json({ error: `Missing email config: ${missingConfig.join(', ')}` });
+    }
+
+    const targetUser = await admin.auth().getUser(req.params.uid);
+    const recipient = targetUser.email ? targetUser.email.trim().toLowerCase() : '';
+
+    if (!recipient) {
+      return res.status(400).json({ error: 'This user does not have an email address.' });
+    }
+    if (targetUser.disabled) {
+      return res.status(400).json({ error: 'This user account is disabled.' });
+    }
+
+    const transporter = getEmailTransporter();
+    const result = await sendEmailMessage(transporter, [recipient], email);
+
+    log('info', 'admin/users/:uid/email sent', {
+      adminUid: adminUser.uid,
+      targetUid: req.params.uid,
+      recipient,
+      subject: email.subject
+    });
+
+    return res.json({
+      success: true,
+      uid: req.params.uid,
+      email: recipient,
+      result
+    });
+  } catch (err) {
+    log('error', err.message, { endpoint: `/api/admin/users/${req.params.uid}/email`, stack: err.stack });
+    return res.status(err.statusCode || 500).json({ error: err.message });
   }
 });
 
