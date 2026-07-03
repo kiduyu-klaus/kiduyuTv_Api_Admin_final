@@ -51,11 +51,16 @@ app.use((req, res, next) => {
   next();
 });
 
+app.get('/ic_banner.png', (req, res) => {
+  res.set('Cache-Control', 'public, max-age=86400');
+  res.sendFile(path.join(__dirname, 'ic_banner.png'));
+});
+
 // ── ROUTER ───────────────────────────────────────────────────────
 
 const router = express.Router();
 const GITHUB_RELEASES_API_URL = 'https://api.github.com/repos/kiduyu-klaus/KiduyuTv_final/releases/latest';
-const APK_BANNER_IMAGE_URL = 'https://cdn.jsdelivr.net/gh/kiduyu-klaus/KiduyuTv_final@main/app/src/main/res/mipmap-xhdpi/ic_banner.png';
+const APK_BANNER_IMAGE_URL = 'ic_banner.png';
 const APK_LINK_CACHE_TTL_MS = 5 * 60 * 1000;
 let latestApkLinksCache = null;
 
@@ -233,6 +238,18 @@ function getUnsubscribeUrl() {
   return replyAddress ? `mailto:${replyAddress}?subject=Unsubscribe` : '#';
 }
 
+function getPublicBaseUrl() {
+  return (process.env.PUBLIC_BASE_URL || process.env.APP_BASE_URL || 'https://sflatransport.com').replace(/\/+$/, '');
+}
+
+function getApkBannerImageUrl() {
+  const configured = process.env.APK_BANNER_IMAGE_URL || APK_BANNER_IMAGE_URL;
+  if (/^https?:\/\//i.test(configured)) return configured;
+
+  const cleanPath = configured.replace(/^\.?\/*/, '');
+  return `${getPublicBaseUrl()}/${cleanPath || 'ic_banner.png'}`;
+}
+
 function buildApkTextEmail(apkLinks, existingText = '') {
   const intro = existingText.trim() || [
     'Hi,',
@@ -260,7 +277,7 @@ function buildApkHtmlEmail(apkLinks, existingHtml = '') {
   const safePhoneUrl = escapeHtmlValue(apkLinks.phone.url);
   const safeTvUrl = escapeHtmlValue(apkLinks.tv.url);
   const safeReleaseUrl = escapeHtmlValue(apkLinks.releaseUrl);
-  const safeBannerUrl = escapeHtmlValue(process.env.APK_BANNER_IMAGE_URL || APK_BANNER_IMAGE_URL);
+  const safeBannerUrl = escapeHtmlValue(getApkBannerImageUrl());
   const safeUnsubscribeUrl = escapeHtmlValue(getUnsubscribeUrl());
 
   return `<!doctype html>
@@ -402,7 +419,9 @@ async function maybeAttachLatestApkLinks(email) {
   const apkLinks = await getLatestApkLinks();
   const hasGeneratedHtml = email.html.includes('data-kiduyu-template="latest-apk-email"');
   const html = hasGeneratedHtml
-    ? email.html.replace(/%unsubscribe_url%/g, escapeHtmlValue(getUnsubscribeUrl()))
+    ? email.html
+        .replace(/%unsubscribe_url%/g, escapeHtmlValue(getUnsubscribeUrl()))
+        .replace(/%apk_banner_url%/g, escapeHtmlValue(getApkBannerImageUrl()))
     : buildApkHtmlEmail(apkLinks, email.html);
 
   return {

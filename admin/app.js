@@ -7,7 +7,7 @@ let searchQuery = '';
 let currentUserUid = null;
 let currentEmailUserUid = null;
 let latestApkLinks = null;
-const APK_BANNER_IMAGE_URL = 'https://cdn.jsdelivr.net/gh/kiduyu-klaus/KiduyuTv_final@main/app/src/main/res/mipmap-xhdpi/ic_banner.png';
+const APK_BANNER_IMAGE_URL = '%apk_banner_url%';
 
 const firebaseConfig = {
   apiKey: "AIzaSyBLrg5egOOGrd3wyf5IBzPI2m9fHp_AR6k",
