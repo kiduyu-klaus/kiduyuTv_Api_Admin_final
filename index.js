@@ -308,12 +308,12 @@ function buildApkHtmlEmail(apkLinks, existingHtml = '') {
       }
     </style>
   </head>
-  <body style="margin:0;padding:0;background:#0B0D12;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#F4F6FA;">
+  <body style="margin:0;padding:0;background:#FFFFFF;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#F4F6FA;">
     <div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent;">
       KiduyuTV ${safeTag} is live - grab the phone or TV build directly, no attachments needed.
     </div>
 
-    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#0B0D12;margin:0;padding:32px 12px;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#FFFFFF;margin:0;padding:32px 12px;">
       <tr>
         <td align="center">
           <table role="presentation" width="100%" cellspacing="0" cellpadding="0" class="container" data-kiduyu-template="latest-apk-email" style="max-width:600px;background:#14161D;border:1px solid #23262F;border-radius:20px;overflow:hidden;">
@@ -1419,11 +1419,30 @@ const CONFIG_DEFAULTS = {
   ads: {
     enable_test_ads: false,
     use_test_ads: false,                 // alias for enable_test_ads (app-side)
-    phone_banner_ad_unit_id: '',
-    phone_interstitial_ad_unit_id: '',
-    phone_rewarded_ad_unit_id: '',
-    tv_banner_ad_unit_id: '',
-    tv_interstitial_ad_unit_id: ''
+    phone_banner_ad_unit_id: 'ca-app-pub-3803477439180910/7183108212',
+    phone_interstitial_ad_unit_id: 'ca-app-pub-3803477439180910/5295324788',
+    phone_rewarded_ad_unit_id: 'ca-app-pub-3803477439180910/3982243116',
+    phone_rewarded_interstitial_ad_unit_id: 'ca-app-pub-3803477439180910/1751398697',
+    phone_app_open_ad_unit_id: 'ca-app-pub-3803477439180910/9694976435',
+    phone_native_ad_unit_id: 'ca-app-pub-3803477439180910/5035465131',
+    test_phone_banner_ad_unit_id: 'ca-app-pub-3940256099942544/9214589741',
+    test_phone_interstitial_ad_unit_id: 'ca-app-pub-3940256099942544/1033173712',
+    test_phone_rewarded_ad_unit_id: 'ca-app-pub-3940256099942544/5224354917',
+    test_phone_rewarded_interstitial_ad_unit_id: 'ca-app-pub-3940256099942544/5354046379',
+    test_phone_app_open_ad_unit_id: 'ca-app-pub-3940256099942544/9257395921',
+    test_phone_native_ad_unit_id: 'ca-app-pub-3940256099942544/2247696110',
+    tv_banner_ad_unit_id: 'ca-app-pub-3803477439180910/XXXXXXXXXX',
+    tv_interstitial_ad_unit_id: 'ca-app-pub-3803477439180910/YYYYYYYYYY',
+    tv_rewarded_ad_unit_id: 'ca-app-pub-3803477439180910/ZZZZZZZZZZ',
+    tv_rewarded_interstitial_ad_unit_id: 'ca-app-pub-3803477439180910/AAAAAAAAAA',
+    tv_app_open_ad_unit_id: 'ca-app-pub-3803477439180910/BBBBBBBBBB',
+    tv_native_ad_unit_id: 'ca-app-pub-3803477439180910/CCCCCCCCCC',
+    test_tv_banner_ad_unit_id: 'ca-app-pub-3940256099942544/9214589741',
+    test_tv_interstitial_ad_unit_id: 'ca-app-pub-3940256099942544/1033173712',
+    test_tv_rewarded_ad_unit_id: 'ca-app-pub-3940256099942544/5224354917',
+    test_tv_rewarded_interstitial_ad_unit_id: 'ca-app-pub-3940256099942544/5354046379',
+    test_tv_app_open_ad_unit_id: 'ca-app-pub-3940256099942544/9257395921',
+    test_tv_native_ad_unit_id: 'ca-app-pub-3940256099942544/2247696110'
   },
   filters: {
     enable_custom_filters: false,
@@ -1488,8 +1507,27 @@ const CONFIG_SECTIONS = {
       { name: 'phone_banner_ad_unit_id' },
       { name: 'phone_interstitial_ad_unit_id' },
       { name: 'phone_rewarded_ad_unit_id' },
+      { name: 'phone_rewarded_interstitial_ad_unit_id' },
+      { name: 'phone_app_open_ad_unit_id' },
+      { name: 'phone_native_ad_unit_id' },
+      { name: 'test_phone_banner_ad_unit_id' },
+      { name: 'test_phone_interstitial_ad_unit_id' },
+      { name: 'test_phone_rewarded_ad_unit_id' },
+      { name: 'test_phone_rewarded_interstitial_ad_unit_id' },
+      { name: 'test_phone_app_open_ad_unit_id' },
+      { name: 'test_phone_native_ad_unit_id' },
       { name: 'tv_banner_ad_unit_id' },
-      { name: 'tv_interstitial_ad_unit_id' }
+      { name: 'tv_interstitial_ad_unit_id' },
+      { name: 'tv_rewarded_ad_unit_id' },
+      { name: 'tv_rewarded_interstitial_ad_unit_id' },
+      { name: 'tv_app_open_ad_unit_id' },
+      { name: 'tv_native_ad_unit_id' },
+      { name: 'test_tv_banner_ad_unit_id' },
+      { name: 'test_tv_interstitial_ad_unit_id' },
+      { name: 'test_tv_rewarded_ad_unit_id' },
+      { name: 'test_tv_rewarded_interstitial_ad_unit_id' },
+      { name: 'test_tv_app_open_ad_unit_id' },
+      { name: 'test_tv_native_ad_unit_id' }
     ]
   },
   filters: {
@@ -1593,10 +1631,10 @@ async function initConfigSection(rtdb, sectionDef, slug) {
   const existing = snap.val();
   const defaults = CONFIG_DEFAULTS[slug] || {};
   const merged = mergeDefaults(existing, defaults);
-  // Only write if node was empty or missing
-  if (!snap.exists() || existing === null) {
+  const missingKeys = Object.keys(merged).filter(key => existing == null || existing[key] === undefined || existing[key] === null || existing[key] === '');
+  if (!snap.exists() || existing === null || missingKeys.length > 0) {
     await ref.set(merged);
-    log('info', 'config section initialised with defaults', { path: sectionDef.rtdbPath });
+    log('info', 'config section initialised with defaults', { path: sectionDef.rtdbPath, missingKeys });
   }
   return merged;
 }

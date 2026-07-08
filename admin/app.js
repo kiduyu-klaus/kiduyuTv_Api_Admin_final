@@ -676,12 +676,12 @@ function buildApkEmailHtml(apkLinks) {
       }
     </style>
   </head>
-  <body style="margin:0;padding:0;background:#0B0D12;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#F4F6FA;">
+  <body style="margin:0;padding:0;background:#FFFFFF;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#F4F6FA;">
     <div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent;">
       KiduyuTV ${tagName} is live - grab the phone or TV build directly, no attachments needed.
     </div>
 
-    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#0B0D12;margin:0;padding:32px 12px;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#FFFFFF;margin:0;padding:32px 12px;">
       <tr>
         <td align="center">
           <table role="presentation" width="100%" cellspacing="0" cellpadding="0" class="container" data-kiduyu-template="latest-apk-email" style="max-width:600px;background:#14161D;border:1px solid #23262F;border-radius:20px;overflow:hidden;">
@@ -1053,7 +1053,7 @@ async function loadCurrentSettings() {
   const displayFields = {
     streaming:  ['playlist_url', 'playlist_epg', 'schedule_api', 'playlist_cache_duration'],
     api:        ['tmdb_bearer_token', 'trakt_client_id', 'trakt_client_secret'],
-    ads:        ['enable_test_ads', 'use_test_ads', 'phone_banner_ad_unit_id', 'phone_interstitial_ad_unit_id', 'phone_rewarded_ad_unit_id', 'tv_banner_ad_unit_id', 'tv_interstitial_ad_unit_id'],
+    ads:        ['enable_test_ads', 'use_test_ads', 'phone_banner_ad_unit_id', 'phone_interstitial_ad_unit_id', 'phone_rewarded_ad_unit_id', 'phone_rewarded_interstitial_ad_unit_id', 'phone_app_open_ad_unit_id', 'phone_native_ad_unit_id', 'test_phone_banner_ad_unit_id', 'test_phone_interstitial_ad_unit_id', 'test_phone_rewarded_ad_unit_id', 'test_phone_rewarded_interstitial_ad_unit_id', 'test_phone_app_open_ad_unit_id', 'test_phone_native_ad_unit_id', 'tv_banner_ad_unit_id', 'tv_interstitial_ad_unit_id', 'tv_rewarded_ad_unit_id', 'tv_rewarded_interstitial_ad_unit_id', 'tv_app_open_ad_unit_id', 'tv_native_ad_unit_id', 'test_tv_banner_ad_unit_id', 'test_tv_interstitial_ad_unit_id', 'test_tv_rewarded_ad_unit_id', 'test_tv_rewarded_interstitial_ad_unit_id', 'test_tv_app_open_ad_unit_id', 'test_tv_native_ad_unit_id'],
     filters:    ['enable_custom_filters', 'easylist_url', 'easyprivacy_url', 'custom_filters_url', 'update_interval_hours', 'filter_timeout_ms', 'filter_fallback_easylist', 'filter_fallback_easyprivacy'],
     network:    ['api_cache_size_mb', 'cache_max_age_minutes', 'cache_max_stale_days', 'api_timeout_seconds', 'max_retries', 'retry_delay_ms'],
     features:   ['disable_ads_globally', 'cursor_speed', 'cursor_hide_delay_ms'],
@@ -1069,7 +1069,17 @@ async function loadCurrentSettings() {
     tmdb_bearer_token: 'TMDB Bearer Token', trakt_client_id: 'Trakt Client ID', trakt_client_secret: 'Trakt Client Secret',
     enable_test_ads: 'Test Ads (Admin)', use_test_ads: 'Use Test Ads (App)',
     phone_banner_ad_unit_id: 'Phone Banner', phone_interstitial_ad_unit_id: 'Phone Interstitial',
-    phone_rewarded_ad_unit_id: 'Phone Rewarded', tv_banner_ad_unit_id: 'TV Banner', tv_interstitial_ad_unit_id: 'TV Interstitial',
+    phone_rewarded_ad_unit_id: 'Phone Rewarded', phone_rewarded_interstitial_ad_unit_id: 'Phone Rewarded Interstitial',
+    phone_app_open_ad_unit_id: 'Phone App Open', phone_native_ad_unit_id: 'Phone Native',
+    test_phone_banner_ad_unit_id: 'Test Phone Banner', test_phone_interstitial_ad_unit_id: 'Test Phone Interstitial',
+    test_phone_rewarded_ad_unit_id: 'Test Phone Rewarded', test_phone_rewarded_interstitial_ad_unit_id: 'Test Phone Rewarded Interstitial',
+    test_phone_app_open_ad_unit_id: 'Test Phone App Open', test_phone_native_ad_unit_id: 'Test Phone Native',
+    tv_banner_ad_unit_id: 'TV Banner', tv_interstitial_ad_unit_id: 'TV Interstitial',
+    tv_rewarded_ad_unit_id: 'TV Rewarded', tv_rewarded_interstitial_ad_unit_id: 'TV Rewarded Interstitial',
+    tv_app_open_ad_unit_id: 'TV App Open', tv_native_ad_unit_id: 'TV Native',
+    test_tv_banner_ad_unit_id: 'Test TV Banner', test_tv_interstitial_ad_unit_id: 'Test TV Interstitial',
+    test_tv_rewarded_ad_unit_id: 'Test TV Rewarded', test_tv_rewarded_interstitial_ad_unit_id: 'Test TV Rewarded Interstitial',
+    test_tv_app_open_ad_unit_id: 'Test TV App Open', test_tv_native_ad_unit_id: 'Test TV Native',
     enable_custom_filters: 'Custom Filters', easylist_url: 'EasyList URL', easyprivacy_url: 'EasyPrivacy URL',
     custom_filters_url: 'Custom Filters URL', update_interval_hours: 'Update Interval (h)',
     filter_timeout_ms: 'Timeout (ms)', filter_fallback_easylist: 'EasyList Fallback', filter_fallback_easyprivacy: 'EasyPrivacy Fallback',
@@ -1239,8 +1249,27 @@ const CONFIG_SECTIONS = [
       { id: 'adsPhoneBanner',    name: 'phone_banner_ad_unit_id' },
       { id: 'adsPhoneInterstitial', name: 'phone_interstitial_ad_unit_id' },
       { id: 'adsPhoneRewarded',  name: 'phone_rewarded_ad_unit_id' },
+      { id: 'adsPhoneRewardedInterstitial', name: 'phone_rewarded_interstitial_ad_unit_id' },
+      { id: 'adsPhoneAppOpen',   name: 'phone_app_open_ad_unit_id' },
+      { id: 'adsPhoneNative',    name: 'phone_native_ad_unit_id' },
       { id: 'adsTvBanner',       name: 'tv_banner_ad_unit_id' },
-      { id: 'adsTvInterstitial', name: 'tv_interstitial_ad_unit_id' }
+      { id: 'adsTvInterstitial', name: 'tv_interstitial_ad_unit_id' },
+      { id: 'adsTvRewarded',    name: 'tv_rewarded_ad_unit_id' },
+      { id: 'adsTvRewardedInterstitial', name: 'tv_rewarded_interstitial_ad_unit_id' },
+      { id: 'adsTvAppOpen',     name: 'tv_app_open_ad_unit_id' },
+      { id: 'adsTvNative',      name: 'tv_native_ad_unit_id' },
+      { id: 'adsTestPhoneBanner', name: 'test_phone_banner_ad_unit_id' },
+      { id: 'adsTestPhoneInterstitial', name: 'test_phone_interstitial_ad_unit_id' },
+      { id: 'adsTestPhoneRewarded', name: 'test_phone_rewarded_ad_unit_id' },
+      { id: 'adsTestPhoneRewardedInterstitial', name: 'test_phone_rewarded_interstitial_ad_unit_id' },
+      { id: 'adsTestPhoneAppOpen', name: 'test_phone_app_open_ad_unit_id' },
+      { id: 'adsTestPhoneNative', name: 'test_phone_native_ad_unit_id' },
+      { id: 'adsTestTvBanner',   name: 'test_tv_banner_ad_unit_id' },
+      { id: 'adsTestTvInterstitial', name: 'test_tv_interstitial_ad_unit_id' },
+      { id: 'adsTestTvRewarded', name: 'test_tv_rewarded_ad_unit_id' },
+      { id: 'adsTestTvRewardedInterstitial', name: 'test_tv_rewarded_interstitial_ad_unit_id' },
+      { id: 'adsTestTvAppOpen', name: 'test_tv_app_open_ad_unit_id' },
+      { id: 'adsTestTvNative', name: 'test_tv_native_ad_unit_id' }
     ],
     saveLabel: 'Ad configuration'
   },
