@@ -2,6 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const path = require('path');
 const fs = require('fs');
+const crypto = require('crypto');
 const cors = require('cors');
 const admin = require('firebase-admin');
 const nodemailer = require('nodemailer');
@@ -35,6 +36,7 @@ if (!fs.existsSync(LOG_FILE)) fs.writeFileSync(LOG_FILE, '');
 const app = express();
 app.use(cors());
 app.use(express.json());
+app.use(express.urlencoded({ extended: false }));
 
 // Serve admin panel at the root — https://sflatransport.com/api/
 
@@ -62,6 +64,7 @@ const router = express.Router();
 const GITHUB_RELEASES_API_URL = 'https://api.github.com/repos/kiduyu-klaus/KiduyuTv_final/releases/latest';
 const APK_BANNER_IMAGE_URL = 'ic_banner.png';
 const APK_LINK_CACHE_TTL_MS = 5 * 60 * 1000;
+const EMAIL_UNSUBSCRIBES_RTDB_PATH = 'email_unsubscribes';
 let latestApkLinksCache = null;
 
 function createHttpError(statusCode, message) {
@@ -85,6 +88,60 @@ async function verifyAdminToken(idToken) {
   return decoded;
 }
 
+function normalizeEmail(email) {
+  return typeof email === 'string' ? email.trim().toLowerCase() : '';
+}
+
+function getEmailKey(email) {
+  return crypto.createHash('sha256').update(normalizeEmail(email)).digest('hex');
+}
+
+function getUnsubscribeSecret() {
+  return process.env.EMAIL_UNSUBSCRIBE_SECRET || process.env.SMTP_PASS || serviceAccount.private_key || 'kiduyutv-email-unsubscribe';
+}
+
+function createUnsubscribeToken(email) {
+  return crypto
+    .createHmac('sha256', getUnsubscribeSecret())
+    .update(`${normalizeEmail(email)}|kiduyutv-unsubscribe-v1`)
+    .digest('hex');
+}
+
+function isValidUnsubscribeToken(email, token) {
+  if (!email || !token) return false;
+  const expected = createUnsubscribeToken(email);
+  const a = Buffer.from(expected, 'hex');
+  const b = Buffer.from(String(token), 'hex');
+  return a.length === b.length && crypto.timingSafeEqual(a, b);
+}
+
+async function markEmailUnsubscribed(email, source = 'unknown') {
+  const normalized = normalizeEmail(email);
+  if (!normalized) return false;
+
+  await admin.database().ref(`${EMAIL_UNSUBSCRIBES_RTDB_PATH}/${getEmailKey(normalized)}`).set({
+    email: normalized,
+    source,
+    unsubscribedAt: new Date().toISOString()
+  });
+  return true;
+}
+
+async function getUnsubscribedEmailSet() {
+  const snap = await admin.database().ref(EMAIL_UNSUBSCRIBES_RTDB_PATH).once('value');
+  const data = snap.val() || {};
+  return new Set(
+    Object.values(data)
+      .map(entry => normalizeEmail(entry && entry.email))
+      .filter(Boolean)
+  );
+}
+
+async function isEmailUnsubscribed(email) {
+  const snap = await admin.database().ref(`${EMAIL_UNSUBSCRIBES_RTDB_PATH}/${getEmailKey(email)}`).once('value');
+  return snap.exists();
+}
+
 async function listAllUsersWithEmails() {
   const emails = new Set();
   let pageToken;
@@ -94,14 +151,15 @@ async function listAllUsersWithEmails() {
 
     for (const user of result.users) {
       if (user.email && !user.disabled) {
-        emails.add(user.email.trim().toLowerCase());
+        emails.add(normalizeEmail(user.email));
       }
     }
 
     pageToken = result.pageToken;
   } while (pageToken);
 
-  return Array.from(emails).sort();
+  const unsubscribed = await getUnsubscribedEmailSet();
+  return Array.from(emails).filter(email => !unsubscribed.has(email)).sort();
 }
 
 function chunkArray(items, size) {
@@ -232,8 +290,21 @@ function escapeHtmlValue(value) {
     .replace(/'/g, '&#039;');
 }
 
-function getUnsubscribeUrl() {
-  if (process.env.EMAIL_UNSUBSCRIBE_URL) return process.env.EMAIL_UNSUBSCRIBE_URL;
+function getUnsubscribeUrl(email = '') {
+  const configured = process.env.EMAIL_UNSUBSCRIBE_URL || `${getPublicBaseUrl()}/unsubscribe`;
+  const normalized = normalizeEmail(email);
+  if (normalized) {
+    try {
+      const url = new URL(configured, getPublicBaseUrl());
+      url.searchParams.set('email', normalized);
+      url.searchParams.set('token', createUnsubscribeToken(normalized));
+      return url.toString();
+    } catch (_) {
+      return configured;
+    }
+  }
+
+  if (configured) return configured;
   const replyAddress = process.env.EMAIL_REPLY_TO || process.env.SMTP_USER || '';
   return replyAddress ? `mailto:${replyAddress}?subject=Unsubscribe` : '#';
 }
@@ -274,11 +345,10 @@ function buildApkTextEmail(apkLinks, existingText = '') {
 
 function buildApkHtmlEmail(apkLinks, existingHtml = '') {
   const safeTag = escapeHtmlValue(apkLinks.tagName || 'latest');
-  const safePhoneUrl = escapeHtmlValue(apkLinks.phone.url);
-  const safeTvUrl = escapeHtmlValue(apkLinks.tv.url);
   const safeReleaseUrl = escapeHtmlValue(apkLinks.releaseUrl);
   const safeBannerUrl = escapeHtmlValue(getApkBannerImageUrl());
   const safeUnsubscribeUrl = escapeHtmlValue(getUnsubscribeUrl());
+  const safeLandingPageUrl = 'https://kiduyu-klaus.github.io/KiduyuTv_final/';
 
   return `<!doctype html>
 <html lang="en">
@@ -310,7 +380,7 @@ function buildApkHtmlEmail(apkLinks, existingHtml = '') {
   </head>
   <body style="margin:0;padding:0;background:#FFFFFF;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#F4F6FA;">
     <div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent;">
-      KiduyuTV ${safeTag} is live - grab the phone or TV build directly, no attachments needed.
+      KiduyuTV ${safeTag} is live - install the latest build from the official download page.
     </div>
 
     <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#FFFFFF;margin:0;padding:32px 12px;">
@@ -344,35 +414,16 @@ function buildApkHtmlEmail(apkLinks, existingHtml = '') {
                 <h1 class="hero-title" style="margin:0 0 12px;color:#FFFFFF;font-size:26px;line-height:1.25;font-weight:800;">
                   A new release just dropped
                 </h1>
-                ${existingHtml.trim() || '<p style="margin:0 0 26px;color:#B7BECC;font-size:15.5px;line-height:1.65;">Faster playback, fewer bugs, better stability. Pick the build that matches your device below - takes about 30 seconds.</p>'}
+                ${existingHtml.trim() || '<p style="margin:0 0 26px;color:#B7BECC;font-size:15.5px;line-height:1.65;">Faster playback, fewer bugs, better stability. Install the latest build from the official download page below.</p>'}
               </td>
             </tr>
 
             <tr>
-              <td style="padding:0 28px 8px;">
+              <td style="padding:0 28px 24px;">
                 <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
                   <tr>
-                    <td class="stack-col" width="50%" style="padding:0 8px 12px 0;vertical-align:top;">
-                      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#1B1E27;border:1px solid #2A2E3A;border-radius:14px;">
-                        <tr>
-                          <td style="padding:20px;">
-                            <p style="margin:0 0 4px;color:#8A93A6;font-size:11.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;">For Phone &amp; Tablet</p>
-                            <p style="margin:0 0 16px;color:#EDEFF4;font-size:14px;line-height:1.5;">Android phones and tablets</p>
-                            <a href="${safePhoneUrl}" class="btn" style="display:inline-block;background:#E50914;color:#FFFFFF;text-decoration:none;border-radius:10px;padding:12px 18px;font-size:14px;font-weight:700;">Download &rarr;</a>
-                          </td>
-                        </tr>
-                      </table>
-                    </td>
-                    <td class="stack-col" width="50%" style="padding:0 0 12px 8px;vertical-align:top;">
-                      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#1B1E27;border:1px solid #2A2E3A;border-radius:14px;">
-                        <tr>
-                          <td style="padding:20px;">
-                            <p style="margin:0 0 4px;color:#8A93A6;font-size:11.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;">For TV</p>
-                            <p style="margin:0 0 16px;color:#EDEFF4;font-size:14px;line-height:1.5;">Android TV and Fire TV</p>
-                            <a href="${safeTvUrl}" class="btn" style="display:inline-block;background:#2B3342;color:#FFFFFF;text-decoration:none;border-radius:10px;padding:12px 18px;font-size:14px;font-weight:700;">Download &rarr;</a>
-                          </td>
-                        </tr>
-                      </table>
+                    <td style="padding:0;">
+                      <a href="${safeLandingPageUrl}" class="btn" style="display:inline-block;background:#E50914;color:#FFFFFF;text-decoration:none;border-radius:10px;padding:16px 22px;font-size:16px;font-weight:700;">Open the KiduyuTV download page</a>
                     </td>
                   </tr>
                 </table>
@@ -434,24 +485,46 @@ async function maybeAttachLatestApkLinks(email) {
   };
 }
 
+function withRecipientUnsubscribe(email, recipient) {
+  const unsubscribeUrl = getUnsubscribeUrl(recipient);
+  return {
+    ...email,
+    text: email.text
+      ? email.text.replace(/%unsubscribe_url%/g, unsubscribeUrl)
+      : email.text,
+    html: email.html
+      ? email.html.replace(/%unsubscribe_url%/g, escapeHtmlValue(unsubscribeUrl))
+      : email.html,
+    unsubscribeUrl
+  };
+}
+
 async function sendEmailMessage(transporter, recipients, email, { bcc = false } = {}) {
+  const normalizedRecipients = Array.isArray(recipients)
+    ? recipients.map(normalizeEmail).filter(Boolean)
+    : [normalizeEmail(recipients)].filter(Boolean);
+  const primaryRecipient = normalizedRecipients[0];
+  const preparedEmail = primaryRecipient ? withRecipientUnsubscribe(email, primaryRecipient) : email;
+  const unsubscribeUrl = preparedEmail.unsubscribeUrl || getUnsubscribeUrl(primaryRecipient);
   const message = {
     from: process.env.EMAIL_FROM,
     replyTo: process.env.EMAIL_REPLY_TO || process.env.EMAIL_FROM,
-    to: bcc ? process.env.EMAIL_FROM : recipients,
-    bcc: bcc ? recipients : undefined,
-    subject: email.subject,
-    text: email.text || undefined,
-    html: email.html || undefined,
+    to: bcc ? process.env.EMAIL_FROM : normalizedRecipients,
+    bcc: bcc ? normalizedRecipients : undefined,
+    subject: preparedEmail.subject,
+    text: preparedEmail.text || undefined,
+    html: preparedEmail.html || undefined,
     headers: {
-      'X-Auto-Response-Suppress': 'All'
+      'X-Auto-Response-Suppress': 'All',
+      'List-Unsubscribe': `<${unsubscribeUrl}>`,
+      'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click'
     }
   };
 
   if (process.env.EMAIL_UNSUBSCRIBE_URL) {
     message.list = {
       unsubscribe: {
-        url: process.env.EMAIL_UNSUBSCRIBE_URL,
+        url: unsubscribeUrl,
         comment: 'Unsubscribe from KiduyuTV email updates'
       }
     };
@@ -470,6 +543,33 @@ async function sendEmailMessage(transporter, recipients, email, { bcc = false } 
 router.get('/health', (req, res) => {
   log('info', 'Health check');
   res.json({ status: 'ok', app: 'connectTv', timestamp: Date.now() });
+});
+
+app.get('/unsubscribe', async (req, res) => {
+  const email = normalizeEmail(req.query.email);
+  const token = String(req.query.token || '');
+
+  if (!isValidUnsubscribeToken(email, token)) {
+    return res.status(400).send('Invalid or expired unsubscribe link.');
+  }
+
+  await markEmailUnsubscribed(email, 'link');
+  return res
+    .status(200)
+    .type('html')
+    .send('<!doctype html><title>Unsubscribed</title><p>You have been unsubscribed from KiduyuTV email updates.</p>');
+});
+
+app.post('/unsubscribe', async (req, res) => {
+  const email = normalizeEmail(req.query.email || req.body.email);
+  const token = String(req.query.token || req.body.token || '');
+
+  if (!isValidUnsubscribeToken(email, token)) {
+    return res.sendStatus(400);
+  }
+
+  await markEmailUnsubscribed(email, 'one-click');
+  return res.sendStatus(204);
 });
 
 // Main endpoint
@@ -590,23 +690,18 @@ router.post('/admin/email/send', async (req, res) => {
       return res.status(400).json({ error: 'No registered users with email addresses found.' });
     }
 
-    const parsedBatchSize = Number(process.env.EMAIL_BATCH_SIZE || 50);
-    const batchSize = Number.isFinite(parsedBatchSize) && parsedBatchSize > 0
-      ? Math.min(Math.floor(parsedBatchSize), 100)
-      : 50;
-    const batches = chunkArray(recipients, batchSize);
     const transporter = getEmailTransporter();
     const { email, apkLinks } = await maybeAttachLatestApkLinks(preparedEmail);
     const results = [];
 
-    for (const batch of batches) {
-      results.push(await sendEmailMessage(transporter, batch, email, { bcc: true }));
+    for (const recipient of recipients) {
+      results.push(await sendEmailMessage(transporter, [recipient], email));
     }
 
     log('info', 'admin/email/send completed', {
       adminUid: adminUser.uid,
       recipientCount: recipients.length,
-      batchCount: batches.length,
+      messageCount: results.length,
       subject: email.subject,
       apkLinksIncluded: !!apkLinks
     });
@@ -614,7 +709,8 @@ router.post('/admin/email/send', async (req, res) => {
     return res.json({
       success: true,
       recipientCount: recipients.length,
-      batchCount: batches.length,
+      batchCount: results.length,
+      messageCount: results.length,
       apkLinks,
       results
     });
@@ -643,6 +739,9 @@ router.post('/admin/users/:uid/email', async (req, res) => {
     }
     if (targetUser.disabled) {
       return res.status(400).json({ error: 'This user account is disabled.' });
+    }
+    if (await isEmailUnsubscribed(recipient)) {
+      return res.status(400).json({ error: 'This user has unsubscribed from email updates.' });
     }
 
     const transporter = getEmailTransporter();
@@ -1400,9 +1499,102 @@ router.delete('/admin/providers/:name', async (req, res) => {
 
 // ── APP CONFIG ROUTES ──────────────────────────────────────────────
 
+const ADS_CONFIG_RTDB_PATH = 'app_config/google_ads_Configuration';
+
+const ADS_CONFIG_DEFAULTS = {
+  enable_test_ads: false,
+  use_test_ads: false,                 // alias for enable_test_ads (app-side)
+  PHONE_ADAPTIVE_BANNER: 'ca-app-pub-3803477439180910/7183108212',
+  PHONE_INTERSTITIAL_UNIT: 'ca-app-pub-3803477439180910/5295324788',
+  PHONE_REWARDED_UNIT: 'ca-app-pub-3803477439180910/3982243116',
+  PHONE_REWARDED_INTERSTITIAL_UNIT: 'ca-app-pub-3803477439180910/1751398697',
+  PHONE_APP_OPEN_UNIT: 'ca-app-pub-3803477439180910/9694976435',
+  PHONE_NATIVE_UNIT: 'ca-app-pub-3803477439180910/5035465131',
+  TEST_PHONE_ADAPTIVE_BANNER: 'ca-app-pub-3940256099942544/9214589741',
+  TEST_PHONE_INTERSTITIAL_UNIT: 'ca-app-pub-3940256099942544/1033173712',
+  TEST_PHONE_REWARDED_UNIT: 'ca-app-pub-3940256099942544/5224354917',
+  TEST_PHONE_REWARDED_INTERSTITIAL_UNIT: 'ca-app-pub-3940256099942544/5354046379',
+  TEST_PHONE_APP_OPEN_UNIT: 'ca-app-pub-3940256099942544/9257395921',
+  TEST_PHONE_NATIVE_UNIT: 'ca-app-pub-3940256099942544/2247696110',
+  TV_ADAPTIVE_BANNER: 'ca-app-pub-3803477439180910/XXXXXXXXXX',
+  TV_INTERSTITIAL_UNIT: 'ca-app-pub-3803477439180910/YYYYYYYYYY',
+  TV_REWARDED_UNIT: 'ca-app-pub-3803477439180910/ZZZZZZZZZZ',
+  TV_REWARDED_INTERSTITIAL_UNIT: 'ca-app-pub-3803477439180910/AAAAAAAAAA',
+  TV_APP_OPEN_UNIT: 'ca-app-pub-3803477439180910/BBBBBBBBBB',
+  TV_NATIVE_UNIT: 'ca-app-pub-3803477439180910/CCCCCCCCCC',
+  TEST_TV_ADAPTIVE_BANNER: 'ca-app-pub-3940256099942544/9214589741',
+  TEST_TV_INTERSTITIAL_UNIT: 'ca-app-pub-3940256099942544/1033173712',
+  TEST_TV_REWARDED_UNIT: 'ca-app-pub-3940256099942544/5224354917',
+  TEST_TV_REWARDED_INTERSTITIAL_UNIT: 'ca-app-pub-3940256099942544/5354046379',
+  TEST_TV_APP_OPEN_UNIT: 'ca-app-pub-3940256099942544/9257395921',
+  TEST_TV_NATIVE_UNIT: 'ca-app-pub-3940256099942544/2247696110'
+};
+
+const ADS_CONFIG_FIELDS = Object.keys(ADS_CONFIG_DEFAULTS).map(name => ({
+  name,
+  type: name === 'enable_test_ads' || name === 'use_test_ads' ? 'boolean' : undefined
+}));
+
+const ADS_CONFIG_LEGACY_FIELDS = [
+  'phone_banner_ad_unit_id',
+  'phone_interstitial_ad_unit_id',
+  'phone_rewarded_ad_unit_id',
+  'phone_rewarded_interstitial_ad_unit_id',
+  'phone_app_open_ad_unit_id',
+  'phone_native_ad_unit_id',
+  'test_phone_banner_ad_unit_id',
+  'test_phone_interstitial_ad_unit_id',
+  'test_phone_rewarded_ad_unit_id',
+  'test_phone_rewarded_interstitial_ad_unit_id',
+  'test_phone_app_open_ad_unit_id',
+  'test_phone_native_ad_unit_id',
+  'tv_banner_ad_unit_id',
+  'tv_interstitial_ad_unit_id',
+  'tv_rewarded_ad_unit_id',
+  'tv_rewarded_interstitial_ad_unit_id',
+  'tv_app_open_ad_unit_id',
+  'tv_native_ad_unit_id',
+  'test_tv_banner_ad_unit_id',
+  'test_tv_interstitial_ad_unit_id',
+  'test_tv_rewarded_ad_unit_id',
+  'test_tv_rewarded_interstitial_ad_unit_id',
+  'test_tv_app_open_ad_unit_id',
+  'test_tv_native_ad_unit_id'
+];
+
+async function initAdsConfig(rtdb) {
+  const ref = rtdb.ref(ADS_CONFIG_RTDB_PATH);
+  const snap = await ref.once('value');
+  const existing = snap.val() || {};
+  let updated = false;
+  const removedLegacyKeys = [];
+
+  for (const [key, val] of Object.entries(ADS_CONFIG_DEFAULTS)) {
+    if (existing[key] === undefined || existing[key] === null || existing[key] === '') {
+      existing[key] = val;
+      updated = true;
+    }
+  }
+
+  for (const key of ADS_CONFIG_LEGACY_FIELDS) {
+    if (Object.prototype.hasOwnProperty.call(existing, key)) {
+      delete existing[key];
+      removedLegacyKeys.push(key);
+      updated = true;
+    }
+  }
+
+  if (updated) {
+    await ref.set(existing);
+    log('info', 'ads config updated with missing/default fields', { removedLegacyKeys });
+  }
+
+  return existing;
+}
+
 // Default values — used to initialise a section when its RTDB node is empty.
-// Existing values are NEVER overwritten by defaults; they are only applied
-// when the section has never been written.
+// Existing values are NEVER overwritten by defaults; missing fields are filled
+// when the section is loaded.
 const CONFIG_DEFAULTS = {
   streaming: {
     playlist_url: 'https://raw.githubusercontent.com/abusaeeidx/IPTV-Scraper-Zilla/main/combined-playlist.m3u',
@@ -1416,34 +1608,7 @@ const CONFIG_DEFAULTS = {
     trakt_client_id: '',
     trakt_client_secret: ''
   },
-  ads: {
-    enable_test_ads: false,
-    use_test_ads: false,                 // alias for enable_test_ads (app-side)
-    phone_banner_ad_unit_id: 'ca-app-pub-3803477439180910/7183108212',
-    phone_interstitial_ad_unit_id: 'ca-app-pub-3803477439180910/5295324788',
-    phone_rewarded_ad_unit_id: 'ca-app-pub-3803477439180910/3982243116',
-    phone_rewarded_interstitial_ad_unit_id: 'ca-app-pub-3803477439180910/1751398697',
-    phone_app_open_ad_unit_id: 'ca-app-pub-3803477439180910/9694976435',
-    phone_native_ad_unit_id: 'ca-app-pub-3803477439180910/5035465131',
-    test_phone_banner_ad_unit_id: 'ca-app-pub-3940256099942544/9214589741',
-    test_phone_interstitial_ad_unit_id: 'ca-app-pub-3940256099942544/1033173712',
-    test_phone_rewarded_ad_unit_id: 'ca-app-pub-3940256099942544/5224354917',
-    test_phone_rewarded_interstitial_ad_unit_id: 'ca-app-pub-3940256099942544/5354046379',
-    test_phone_app_open_ad_unit_id: 'ca-app-pub-3940256099942544/9257395921',
-    test_phone_native_ad_unit_id: 'ca-app-pub-3940256099942544/2247696110',
-    tv_banner_ad_unit_id: 'ca-app-pub-3803477439180910/XXXXXXXXXX',
-    tv_interstitial_ad_unit_id: 'ca-app-pub-3803477439180910/YYYYYYYYYY',
-    tv_rewarded_ad_unit_id: 'ca-app-pub-3803477439180910/ZZZZZZZZZZ',
-    tv_rewarded_interstitial_ad_unit_id: 'ca-app-pub-3803477439180910/AAAAAAAAAA',
-    tv_app_open_ad_unit_id: 'ca-app-pub-3803477439180910/BBBBBBBBBB',
-    tv_native_ad_unit_id: 'ca-app-pub-3803477439180910/CCCCCCCCCC',
-    test_tv_banner_ad_unit_id: 'ca-app-pub-3940256099942544/9214589741',
-    test_tv_interstitial_ad_unit_id: 'ca-app-pub-3940256099942544/1033173712',
-    test_tv_rewarded_ad_unit_id: 'ca-app-pub-3940256099942544/5224354917',
-    test_tv_rewarded_interstitial_ad_unit_id: 'ca-app-pub-3940256099942544/5354046379',
-    test_tv_app_open_ad_unit_id: 'ca-app-pub-3940256099942544/9257395921',
-    test_tv_native_ad_unit_id: 'ca-app-pub-3940256099942544/2247696110'
-  },
+  ads: ADS_CONFIG_DEFAULTS,
   filters: {
     enable_custom_filters: false,
     easylist_url: 'https://easylist.to/easylist/easylist.txt',
@@ -1500,35 +1665,8 @@ const CONFIG_SECTIONS = {
     ]
   },
   ads: {
-    rtdbPath: 'app_config/google_ads_Configuration',
-    fields: [
-      { name: 'enable_test_ads', type: 'boolean' },
-      { name: 'use_test_ads',   type: 'boolean' },
-      { name: 'phone_banner_ad_unit_id' },
-      { name: 'phone_interstitial_ad_unit_id' },
-      { name: 'phone_rewarded_ad_unit_id' },
-      { name: 'phone_rewarded_interstitial_ad_unit_id' },
-      { name: 'phone_app_open_ad_unit_id' },
-      { name: 'phone_native_ad_unit_id' },
-      { name: 'test_phone_banner_ad_unit_id' },
-      { name: 'test_phone_interstitial_ad_unit_id' },
-      { name: 'test_phone_rewarded_ad_unit_id' },
-      { name: 'test_phone_rewarded_interstitial_ad_unit_id' },
-      { name: 'test_phone_app_open_ad_unit_id' },
-      { name: 'test_phone_native_ad_unit_id' },
-      { name: 'tv_banner_ad_unit_id' },
-      { name: 'tv_interstitial_ad_unit_id' },
-      { name: 'tv_rewarded_ad_unit_id' },
-      { name: 'tv_rewarded_interstitial_ad_unit_id' },
-      { name: 'tv_app_open_ad_unit_id' },
-      { name: 'tv_native_ad_unit_id' },
-      { name: 'test_tv_banner_ad_unit_id' },
-      { name: 'test_tv_interstitial_ad_unit_id' },
-      { name: 'test_tv_rewarded_ad_unit_id' },
-      { name: 'test_tv_rewarded_interstitial_ad_unit_id' },
-      { name: 'test_tv_app_open_ad_unit_id' },
-      { name: 'test_tv_native_ad_unit_id' }
-    ]
+    rtdbPath: ADS_CONFIG_RTDB_PATH,
+    fields: ADS_CONFIG_FIELDS
   },
   filters: {
     rtdbPath: 'app_config/filter_lists_Configuration',
@@ -1655,7 +1793,9 @@ router.get('/admin/config/:section', async (req, res) => {
     await admin.auth().verifyIdToken(idToken);
     const rtdb = admin.database();
     // Init with defaults if empty — does NOT overwrite existing values
-    const cfg = await initConfigSection(rtdb, sectionDef, req.params.section);
+    const cfg = req.params.section === 'ads'
+      ? await initAdsConfig(rtdb)
+      : await initConfigSection(rtdb, sectionDef, req.params.section);
 
     log('info', 'admin/config fetched', { section: req.params.section });
     return res.json(cfg);
@@ -1696,8 +1836,9 @@ router.put('/admin/config/:section', async (req, res) => {
     }
 
     // Merge with existing values so partial updates don't wipe unset fields
-    const snap = await ref.once('value');
-    const existing = snap.val() || {};
+    const existing = req.params.section === 'ads'
+      ? await initAdsConfig(rtdb)
+      : (await ref.once('value')).val() || {};
     const merged = { ...existing, ...payload };
     await ref.set(merged);
 

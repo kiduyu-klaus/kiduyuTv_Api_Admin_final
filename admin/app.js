@@ -119,6 +119,14 @@ async function apiCall(method, endpoint, body = null) {
   return data;
 }
 
+async function ensureAdsConfigDefaults() {
+  try {
+    await apiCall('GET', `/admin/config/ads?idToken=${encodeURIComponent(idToken)}`);
+  } catch (err) {
+    console.warn('Unable to ensure ads config defaults:', err.message);
+  }
+}
+
 // ── AUTH ───────────────────────────────────────────────────────────
 async function handleLogin(email, password) {
   if (!initialized) {
@@ -203,6 +211,7 @@ function showAdminScreen() {
   $loginScreen.classList.remove('active');
   $adminScreen.classList.add('active');
   loadDashboard();
+  ensureAdsConfigDefaults();
 }
 
 // ── TAB NAVIGATION ──────────────────────────────────────────────────
@@ -800,12 +809,47 @@ async function applyApkEmailTemplate({ subjectId, textId, htmlId, previewId }) {
     subject.value = buildApkEmailSubject(latestApkLinks);
     subject.dataset.apkAutofilled = 'true';
   }
+  const landingPageUrl = 'https://kiduyu-klaus.github.io/KiduyuTv_final/';
+
   if (messageText && (!messageText.value.trim() || messageText.dataset.apkAutofilled === 'true')) {
-    messageText.value = buildApkEmailText(latestApkLinks);
+    messageText.value = [
+      'Hi,',
+      '',
+      'The latest KiduyuTV app release is ready to download.',
+      '',
+      'Open the official KiduyuTV download page and choose the build that matches your device.',
+      '',
+      `Download page: ${landingPageUrl}`,
+      '',
+      'If you were not expecting this message, you can ignore it.',
+      '',
+      'KiduyuTV'
+    ].join('\n');
     messageText.dataset.apkAutofilled = 'true';
   }
   if (messageHtml && (!messageHtml.value.trim() || messageHtml.dataset.apkAutofilled === 'true')) {
-    messageHtml.value = buildApkEmailHtml(latestApkLinks);
+    messageHtml.value = `<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Download the latest KiduyuTV app</title>
+    <style>
+      .btn { display:inline-block;padding:14px 18px;border-radius:12px;background:#E50914;color:#FFFFFF;text-decoration:none;font-weight:700; }
+      body { margin:0;padding:0;font-family:Arial,Helvetica,sans-serif;background:#F4F6FA;color:#111111; }
+      .container { width:100%;max-width:600px;margin:0 auto;padding:24px; }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1 style="font-size:24px;margin:0 0 20px;">A new KiduyuTV release is ready</h1>
+      <p style="margin:0 0 18px;line-height:1.6;">The latest KiduyuTV app release is ready to download. Open the official KiduyuTV download page and choose the build that matches your device.</p>
+      <p><a href="${landingPageUrl}" class="btn">Open the KiduyuTV download page</a></p>
+      <p style="margin:24px 0 0;font-size:13px;color:#6E7686;line-height:1.6;">If you were not expecting this message, you can ignore it.</p>
+      <p style="margin:10px 0 0;font-size:13px;color:#6E7686;line-height:1.6;">KiduyuTV</p>
+    </div>
+  </body>
+</html>`;
     messageHtml.dataset.apkAutofilled = 'true';
   }
 }
@@ -895,10 +939,20 @@ async function sendSingleUserEmail() {
       messageHtml,
       includeApkLinks
     });
-
+    if (includeApkLinks) {
+      includeApkLinks.checked = false;
+    }
     const apkNote = result.apkLinks ? ` with ${result.apkLinks.tagName || 'latest'} APK links` : '';
     setSingleEmailSummary(`Email sent to ${result.email}${apkNote}`);
     showToast('Email sent successfully', 'success');
+    if (includeApkLinks?.checked) {
+      applyApkEmailTemplate({
+        subjectId: 'singleEmailSubject',
+        textId: 'singleEmailMessageText',
+        htmlId: 'singleEmailMessageHtml',
+        previewId: 'singleApkLinksPreview'
+      });
+    }
   } catch (err) {
     setSingleEmailSummary(err.message, 'error');
     showToast(err.message, 'error');
@@ -987,11 +1041,37 @@ async function loadAnalytics() {
 document.getElementById('refreshAnalytics').addEventListener('click', loadAnalytics);
 
 // ── CURRENT SETTINGS (read-only snapshot) ────────────────────────
+const ADS_CONFIG_FIELDS = [
+  { key: 'PHONE_ADAPTIVE_BANNER', inputId: 'adsPhoneBanner', label: 'PHONE_ADAPTIVE_BANNER' },
+  { key: 'PHONE_INTERSTITIAL_UNIT', inputId: 'adsPhoneInterstitial', label: 'PHONE_INTERSTITIAL_UNIT' },
+  { key: 'PHONE_REWARDED_UNIT', inputId: 'adsPhoneRewarded', label: 'PHONE_REWARDED_UNIT' },
+  { key: 'PHONE_REWARDED_INTERSTITIAL_UNIT', inputId: 'adsPhoneRewardedInterstitial', label: 'PHONE_REWARDED_INTERSTITIAL_UNIT' },
+  { key: 'PHONE_APP_OPEN_UNIT', inputId: 'adsPhoneAppOpen', label: 'PHONE_APP_OPEN_UNIT' },
+  { key: 'PHONE_NATIVE_UNIT', inputId: 'adsPhoneNative', label: 'PHONE_NATIVE_UNIT' },
+  { key: 'TV_ADAPTIVE_BANNER', inputId: 'adsTvBanner', label: 'TV_ADAPTIVE_BANNER' },
+  { key: 'TV_INTERSTITIAL_UNIT', inputId: 'adsTvInterstitial', label: 'TV_INTERSTITIAL_UNIT' },
+  { key: 'TV_REWARDED_UNIT', inputId: 'adsTvRewarded', label: 'TV_REWARDED_UNIT' },
+  { key: 'TV_REWARDED_INTERSTITIAL_UNIT', inputId: 'adsTvRewardedInterstitial', label: 'TV_REWARDED_INTERSTITIAL_UNIT' },
+  { key: 'TV_APP_OPEN_UNIT', inputId: 'adsTvAppOpen', label: 'TV_APP_OPEN_UNIT' },
+  { key: 'TV_NATIVE_UNIT', inputId: 'adsTvNative', label: 'TV_NATIVE_UNIT' },
+  { key: 'TEST_PHONE_ADAPTIVE_BANNER', inputId: 'adsTestPhoneBanner', label: 'TEST_PHONE_ADAPTIVE_BANNER' },
+  { key: 'TEST_PHONE_INTERSTITIAL_UNIT', inputId: 'adsTestPhoneInterstitial', label: 'TEST_PHONE_INTERSTITIAL_UNIT' },
+  { key: 'TEST_PHONE_REWARDED_UNIT', inputId: 'adsTestPhoneRewarded', label: 'TEST_PHONE_REWARDED_UNIT' },
+  { key: 'TEST_PHONE_REWARDED_INTERSTITIAL_UNIT', inputId: 'adsTestPhoneRewardedInterstitial', label: 'TEST_PHONE_REWARDED_INTERSTITIAL_UNIT' },
+  { key: 'TEST_PHONE_APP_OPEN_UNIT', inputId: 'adsTestPhoneAppOpen', label: 'TEST_PHONE_APP_OPEN_UNIT' },
+  { key: 'TEST_PHONE_NATIVE_UNIT', inputId: 'adsTestPhoneNative', label: 'TEST_PHONE_NATIVE_UNIT' },
+  { key: 'TEST_TV_ADAPTIVE_BANNER', inputId: 'adsTestTvBanner', label: 'TEST_TV_ADAPTIVE_BANNER' },
+  { key: 'TEST_TV_INTERSTITIAL_UNIT', inputId: 'adsTestTvInterstitial', label: 'TEST_TV_INTERSTITIAL_UNIT' },
+  { key: 'TEST_TV_REWARDED_UNIT', inputId: 'adsTestTvRewarded', label: 'TEST_TV_REWARDED_UNIT' },
+  { key: 'TEST_TV_REWARDED_INTERSTITIAL_UNIT', inputId: 'adsTestTvRewardedInterstitial', label: 'TEST_TV_REWARDED_INTERSTITIAL_UNIT' },
+  { key: 'TEST_TV_APP_OPEN_UNIT', inputId: 'adsTestTvAppOpen', label: 'TEST_TV_APP_OPEN_UNIT' },
+  { key: 'TEST_TV_NATIVE_UNIT', inputId: 'adsTestTvNative', label: 'TEST_TV_NATIVE_UNIT' }
+];
+
 // Fields considered sensitive — values are masked
 const MASKED_FIELDS = new Set([
   'tmdb_bearer_token', 'trakt_client_id', 'trakt_client_secret',
-  'phone_banner_ad_unit_id', 'phone_interstitial_ad_unit_id', 'phone_rewarded_ad_unit_id',
-  'tv_banner_ad_unit_id', 'tv_interstitial_ad_unit_id'
+  ...ADS_CONFIG_FIELDS.map(field => field.key)
 ]);
 
 function maskValue(key, val) {
@@ -1053,7 +1133,7 @@ async function loadCurrentSettings() {
   const displayFields = {
     streaming:  ['playlist_url', 'playlist_epg', 'schedule_api', 'playlist_cache_duration'],
     api:        ['tmdb_bearer_token', 'trakt_client_id', 'trakt_client_secret'],
-    ads:        ['enable_test_ads', 'use_test_ads', 'phone_banner_ad_unit_id', 'phone_interstitial_ad_unit_id', 'phone_rewarded_ad_unit_id', 'phone_rewarded_interstitial_ad_unit_id', 'phone_app_open_ad_unit_id', 'phone_native_ad_unit_id', 'test_phone_banner_ad_unit_id', 'test_phone_interstitial_ad_unit_id', 'test_phone_rewarded_ad_unit_id', 'test_phone_rewarded_interstitial_ad_unit_id', 'test_phone_app_open_ad_unit_id', 'test_phone_native_ad_unit_id', 'tv_banner_ad_unit_id', 'tv_interstitial_ad_unit_id', 'tv_rewarded_ad_unit_id', 'tv_rewarded_interstitial_ad_unit_id', 'tv_app_open_ad_unit_id', 'tv_native_ad_unit_id', 'test_tv_banner_ad_unit_id', 'test_tv_interstitial_ad_unit_id', 'test_tv_rewarded_ad_unit_id', 'test_tv_rewarded_interstitial_ad_unit_id', 'test_tv_app_open_ad_unit_id', 'test_tv_native_ad_unit_id'],
+    ads:        ['enable_test_ads', 'use_test_ads', ...ADS_CONFIG_FIELDS.map(field => field.key)],
     filters:    ['enable_custom_filters', 'easylist_url', 'easyprivacy_url', 'custom_filters_url', 'update_interval_hours', 'filter_timeout_ms', 'filter_fallback_easylist', 'filter_fallback_easyprivacy'],
     network:    ['api_cache_size_mb', 'cache_max_age_minutes', 'cache_max_stale_days', 'api_timeout_seconds', 'max_retries', 'retry_delay_ms'],
     features:   ['disable_ads_globally', 'cursor_speed', 'cursor_hide_delay_ms'],
@@ -1068,18 +1148,7 @@ async function loadCurrentSettings() {
     playlist_cache_duration: 'Cache Duration (h)',
     tmdb_bearer_token: 'TMDB Bearer Token', trakt_client_id: 'Trakt Client ID', trakt_client_secret: 'Trakt Client Secret',
     enable_test_ads: 'Test Ads (Admin)', use_test_ads: 'Use Test Ads (App)',
-    phone_banner_ad_unit_id: 'Phone Banner', phone_interstitial_ad_unit_id: 'Phone Interstitial',
-    phone_rewarded_ad_unit_id: 'Phone Rewarded', phone_rewarded_interstitial_ad_unit_id: 'Phone Rewarded Interstitial',
-    phone_app_open_ad_unit_id: 'Phone App Open', phone_native_ad_unit_id: 'Phone Native',
-    test_phone_banner_ad_unit_id: 'Test Phone Banner', test_phone_interstitial_ad_unit_id: 'Test Phone Interstitial',
-    test_phone_rewarded_ad_unit_id: 'Test Phone Rewarded', test_phone_rewarded_interstitial_ad_unit_id: 'Test Phone Rewarded Interstitial',
-    test_phone_app_open_ad_unit_id: 'Test Phone App Open', test_phone_native_ad_unit_id: 'Test Phone Native',
-    tv_banner_ad_unit_id: 'TV Banner', tv_interstitial_ad_unit_id: 'TV Interstitial',
-    tv_rewarded_ad_unit_id: 'TV Rewarded', tv_rewarded_interstitial_ad_unit_id: 'TV Rewarded Interstitial',
-    tv_app_open_ad_unit_id: 'TV App Open', tv_native_ad_unit_id: 'TV Native',
-    test_tv_banner_ad_unit_id: 'Test TV Banner', test_tv_interstitial_ad_unit_id: 'Test TV Interstitial',
-    test_tv_rewarded_ad_unit_id: 'Test TV Rewarded', test_tv_rewarded_interstitial_ad_unit_id: 'Test TV Rewarded Interstitial',
-    test_tv_app_open_ad_unit_id: 'Test TV App Open', test_tv_native_ad_unit_id: 'Test TV Native',
+    ...Object.fromEntries(ADS_CONFIG_FIELDS.map(field => [field.key, field.label])),
     enable_custom_filters: 'Custom Filters', easylist_url: 'EasyList URL', easyprivacy_url: 'EasyPrivacy URL',
     custom_filters_url: 'Custom Filters URL', update_interval_hours: 'Update Interval (h)',
     filter_timeout_ms: 'Timeout (ms)', filter_fallback_easylist: 'EasyList Fallback', filter_fallback_easyprivacy: 'EasyPrivacy Fallback',
@@ -1246,30 +1315,7 @@ const CONFIG_SECTIONS = [
     fields: [
       { id: 'adsEnableTestAds',  name: 'enable_test_ads', type: 'boolean' },
       { id: 'adsUseTestAds',     name: 'use_test_ads',   type: 'boolean' },
-      { id: 'adsPhoneBanner',    name: 'phone_banner_ad_unit_id' },
-      { id: 'adsPhoneInterstitial', name: 'phone_interstitial_ad_unit_id' },
-      { id: 'adsPhoneRewarded',  name: 'phone_rewarded_ad_unit_id' },
-      { id: 'adsPhoneRewardedInterstitial', name: 'phone_rewarded_interstitial_ad_unit_id' },
-      { id: 'adsPhoneAppOpen',   name: 'phone_app_open_ad_unit_id' },
-      { id: 'adsPhoneNative',    name: 'phone_native_ad_unit_id' },
-      { id: 'adsTvBanner',       name: 'tv_banner_ad_unit_id' },
-      { id: 'adsTvInterstitial', name: 'tv_interstitial_ad_unit_id' },
-      { id: 'adsTvRewarded',    name: 'tv_rewarded_ad_unit_id' },
-      { id: 'adsTvRewardedInterstitial', name: 'tv_rewarded_interstitial_ad_unit_id' },
-      { id: 'adsTvAppOpen',     name: 'tv_app_open_ad_unit_id' },
-      { id: 'adsTvNative',      name: 'tv_native_ad_unit_id' },
-      { id: 'adsTestPhoneBanner', name: 'test_phone_banner_ad_unit_id' },
-      { id: 'adsTestPhoneInterstitial', name: 'test_phone_interstitial_ad_unit_id' },
-      { id: 'adsTestPhoneRewarded', name: 'test_phone_rewarded_ad_unit_id' },
-      { id: 'adsTestPhoneRewardedInterstitial', name: 'test_phone_rewarded_interstitial_ad_unit_id' },
-      { id: 'adsTestPhoneAppOpen', name: 'test_phone_app_open_ad_unit_id' },
-      { id: 'adsTestPhoneNative', name: 'test_phone_native_ad_unit_id' },
-      { id: 'adsTestTvBanner',   name: 'test_tv_banner_ad_unit_id' },
-      { id: 'adsTestTvInterstitial', name: 'test_tv_interstitial_ad_unit_id' },
-      { id: 'adsTestTvRewarded', name: 'test_tv_rewarded_ad_unit_id' },
-      { id: 'adsTestTvRewardedInterstitial', name: 'test_tv_rewarded_interstitial_ad_unit_id' },
-      { id: 'adsTestTvAppOpen', name: 'test_tv_app_open_ad_unit_id' },
-      { id: 'adsTestTvNative', name: 'test_tv_native_ad_unit_id' }
+      ...ADS_CONFIG_FIELDS.map(field => ({ id: field.inputId, name: field.key }))
     ],
     saveLabel: 'Ad configuration'
   },
