@@ -6,6 +6,7 @@ const crypto = require('crypto');
 const cors = require('cors');
 const admin = require('firebase-admin');
 const nodemailer = require('nodemailer');
+const { MailtrapTransport } = require('mailtrap');
 
 // ── INITIALISE FIREBASE ADMIN ─────────────────────────────────────
 
@@ -171,12 +172,22 @@ function chunkArray(items, size) {
 }
 
 function getEmailTransporter() {
+  const mailtrapToken = process.env.MAILTRAP_API_TOKEN || process.env.API_TOKEN;
+  if (mailtrapToken) {
+    return nodemailer.createTransport(
+      MailtrapTransport({
+        token: mailtrapToken
+      })
+    );
+  }
+
   const port = Number(process.env.SMTP_PORT || 465);
 
   return nodemailer.createTransport({
     host: process.env.SMTP_HOST,
     port,
     secure: process.env.SMTP_SECURE !== 'false',
+    requireTLS: process.env.SMTP_REQUIRE_TLS === 'true',
     auth: {
       user: process.env.SMTP_USER,
       pass: process.env.SMTP_PASS
@@ -185,7 +196,10 @@ function getEmailTransporter() {
 }
 
 function validateEmailConfig() {
-  const required = ['SMTP_HOST', 'SMTP_USER', 'SMTP_PASS', 'EMAIL_FROM'];
+  const required = ['EMAIL_FROM'];
+  if (!process.env.MAILTRAP_API_TOKEN && !process.env.API_TOKEN) {
+    required.push('SMTP_HOST', 'SMTP_USER', 'SMTP_PASS');
+  }
   return required.filter(key => !process.env[key]);
 }
 
