@@ -4,12 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="KiduyuTV - A dual-form-factor Android streaming app for Android TV, Fire TV, phones, and tablets with movies, TV shows, Live TV, schedule playback, Trakt, Firebase sync, and multi-network ads">
+    <meta name="theme-color" content="#070709">
     <title>KiduyuTV - Android TV, Fire TV & Mobile Streaming</title>
     <link rel="icon" type="image/png" href="https://raw.githubusercontent.com/kiduyu-klaus/KiduyuTv_final/refs/heads/main/app/src/main/res/mipmap-xxxhdpi/ic_launcher1.png">
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
     <style>
         * {
             margin: 0;
@@ -75,11 +76,13 @@
         .logo-icon {
             width: 40px;
             height: 40px;
-            background: var(--gradient-primary);
+            background-image: url('https://raw.githubusercontent.com/kiduyu-klaus/KiduyuTv_final/refs/heads/main/app/src/main/res/mipmap-xxxhdpi/ic_launcher1.png');
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+            background-color: #0a0a0a;
             border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            display: block;
         }
 
         .nav-links {
@@ -1027,16 +1030,1103 @@
             }
         }
     </style>
+    <style>
+        /* Modern responsive design layer */
+        :root {
+            --primary: #ff3344;
+            --primary-dark: #d70f24;
+            --primary-soft: rgba(255, 51, 68, 0.14);
+            --accent: #ff8a3d;
+            --background: #070709;
+            --surface: #101014;
+            --surface-raised: #17171d;
+            --surface-soft: rgba(255, 255, 255, 0.045);
+            --text-primary: #f8f8fa;
+            --text-secondary: #a7a7b1;
+            --text-muted: #71717c;
+            --border: rgba(255, 255, 255, 0.1);
+            --border-strong: rgba(255, 255, 255, 0.18);
+            --shadow-soft: 0 24px 80px rgba(0, 0, 0, 0.34);
+            --shadow-card: 0 18px 50px rgba(0, 0, 0, 0.22);
+            --radius-xl: 32px;
+            --radius-lg: 24px;
+            --radius-md: 18px;
+            --content-width: 1200px;
+        }
+
+        html {
+            scroll-behavior: smooth;
+            scroll-padding-top: 100px;
+        }
+
+        body {
+            min-width: 320px;
+            overflow-x: hidden;
+            background:
+                radial-gradient(circle at 8% 0%, rgba(255, 51, 68, 0.1), transparent 28rem),
+                var(--background);
+            color: var(--text-primary);
+            font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        body::before {
+            position: fixed;
+            inset: 0;
+            z-index: -1;
+            pointer-events: none;
+            content: "";
+            opacity: 0.23;
+            background-image: linear-gradient(rgba(255, 255, 255, 0.025) 1px, transparent 1px),
+                              linear-gradient(90deg, rgba(255, 255, 255, 0.025) 1px, transparent 1px);
+            background-size: 64px 64px;
+            mask-image: linear-gradient(to bottom, black, transparent 70%);
+        }
+
+        h1,
+        h2,
+        h3,
+        h4,
+        .logo,
+        .footer-logo {
+            font-family: "Space Grotesk", "Inter", sans-serif;
+            letter-spacing: -0.035em;
+        }
+
+        img {
+            display: block;
+            max-width: 100%;
+        }
+
+        a,
+        button {
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        a:focus-visible,
+        button:focus-visible {
+            outline: 3px solid rgba(255, 138, 61, 0.85);
+            outline-offset: 4px;
+        }
+
+        .skip-link {
+            position: fixed;
+            top: 12px;
+            left: 12px;
+            z-index: 2000;
+            padding: 0.75rem 1rem;
+            border-radius: 12px;
+            color: #fff;
+            background: var(--primary);
+            text-decoration: none;
+            transform: translateY(-160%);
+            transition: transform 0.2s ease;
+        }
+
+        .skip-link:focus {
+            transform: translateY(0);
+        }
+
+        .nav {
+            position: fixed;
+            top: 18px;
+            left: 50%;
+            z-index: 1000;
+            width: min(calc(100% - 32px), var(--content-width));
+            min-height: 68px;
+            padding: 0.65rem 0.75rem 0.65rem 1rem;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 20px;
+            background: rgba(11, 11, 14, 0.72);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.22);
+            backdrop-filter: blur(18px) saturate(140%);
+            -webkit-backdrop-filter: blur(18px) saturate(140%);
+            transform: translateX(-50%);
+            transition: top 0.25s ease, background 0.25s ease, border-color 0.25s ease;
+        }
+
+        .nav.scrolled {
+            top: 10px;
+            border-color: var(--border-strong);
+            background: rgba(11, 11, 14, 0.92);
+        }
+
+        .logo {
+            gap: 0.7rem;
+            color: var(--text-primary);
+            font-size: 1.18rem;
+            font-weight: 700;
+            text-decoration: none;
+        }
+
+        .logo-icon {
+            width: 42px;
+            height: 42px;
+            padding: 2px;
+            border: 1px solid rgba(255, 255, 255, 0.16);
+            border-radius: 13px;
+            background-image: url('https://raw.githubusercontent.com/kiduyu-klaus/KiduyuTv_final/refs/heads/main/app/src/main/res/mipmap-xxxhdpi/ic_launcher1.png');
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+            background-color: #0a0a0a;
+            box-shadow: 0 8px 22px rgba(255, 51, 68, 0.18);
+        }
+
+        .nav-links {
+            align-items: center;
+            gap: 0.15rem;
+        }
+
+        .nav-links a {
+            display: block;
+            padding: 0.65rem 0.75rem;
+            border-radius: 10px;
+            color: var(--text-secondary);
+            font-size: 0.84rem;
+            font-weight: 600;
+            transition: color 0.2s ease, background 0.2s ease, transform 0.2s ease;
+        }
+
+        .nav-links a:hover {
+            color: #fff;
+            background: rgba(255, 255, 255, 0.06);
+        }
+
+        .nav-links .admin-login-link {
+            margin-left: 0.45rem;
+            padding: 0.68rem 1rem;
+            color: #fff;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            box-shadow: 0 8px 22px rgba(255, 51, 68, 0.24);
+        }
+
+        .nav-links .admin-login-link:hover {
+            background: linear-gradient(135deg, #ff5261, var(--primary));
+            transform: translateY(-1px);
+        }
+
+        .nav-toggle {
+            width: 46px;
+            height: 46px;
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            background: rgba(255, 255, 255, 0.045);
+        }
+
+        .mobile-menu {
+            z-index: 900;
+            align-items: stretch;
+            justify-content: flex-start;
+            gap: 0.45rem;
+            padding: 7rem 1.25rem 2rem;
+            background: rgba(7, 7, 9, 0.97);
+            backdrop-filter: blur(18px);
+        }
+
+        .mobile-menu a {
+            width: min(100%, 520px);
+            margin-inline: auto;
+            padding: 0.9rem 1rem;
+            border: 1px solid transparent;
+            border-radius: 14px;
+            color: var(--text-secondary);
+            font-size: 1.05rem;
+            text-align: left;
+        }
+
+        .mobile-menu a:hover {
+            border-color: var(--border);
+            color: #fff;
+            background: var(--surface-soft);
+        }
+
+        .mobile-menu .admin-login-link {
+            margin-top: 0.5rem;
+            padding: 0.95rem 1rem;
+            color: #fff;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            text-align: center;
+        }
+
+        .hero {
+            position: relative;
+            display: grid;
+            grid-template-columns: minmax(0, 1.02fr) minmax(420px, 0.98fr);
+            align-items: center;
+            gap: clamp(3rem, 6vw, 6.5rem);
+            width: min(calc(100% - 48px), var(--content-width));
+            min-height: 100svh;
+            margin: 0 auto;
+            padding: 132px 0 86px;
+            overflow: visible;
+            background: none;
+        }
+
+        .hero::before {
+            position: absolute;
+            top: 8%;
+            right: -18%;
+            z-index: -1;
+            width: 720px;
+            height: 720px;
+            border-radius: 50%;
+            content: "";
+            background: radial-gradient(circle, rgba(255, 51, 68, 0.18), rgba(255, 138, 61, 0.06) 34%, transparent 70%);
+            filter: blur(8px);
+        }
+
+        .hero-content {
+            width: auto;
+            max-width: 650px;
+            margin: 0;
+            text-align: left;
+        }
+
+        .hero-badge {
+            display: inline-flex;
+            gap: 0.5rem;
+            margin-bottom: 1.4rem;
+            padding: 0.5rem 0.75rem;
+            border: 1px solid rgba(255, 90, 105, 0.24);
+            border-radius: 999px;
+            color: #ffabb3;
+            background: rgba(255, 51, 68, 0.08);
+            font-size: 0.76rem;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+
+        .hero-badge svg {
+            width: 14px;
+            height: 14px;
+        }
+
+        .hero-title {
+            max-width: 8ch;
+            margin: 0;
+            color: #fff;
+            font-size: clamp(4.35rem, 8vw, 7.25rem);
+            font-weight: 700;
+            line-height: 0.9;
+            letter-spacing: -0.075em;
+            background: linear-gradient(120deg, #fff 18%, #e7e7eb 56%, #ff818e 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .hero-subtitle {
+            max-width: 62ch;
+            margin: 1.55rem 0 0;
+            color: var(--text-secondary);
+            font-size: clamp(1rem, 1.8vw, 1.18rem);
+            line-height: 1.8;
+        }
+
+        .hero-buttons {
+            justify-content: flex-start;
+            gap: 0.85rem;
+            margin-top: 2rem;
+        }
+
+        .btn {
+            min-height: 52px;
+            padding: 0.82rem 1.2rem;
+            border: 1px solid transparent;
+            border-radius: 14px;
+            font-size: 0.92rem;
+            font-weight: 700;
+            text-decoration: none;
+            transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease, border-color 0.2s ease;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .btn-primary {
+            color: #fff;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            box-shadow: 0 14px 34px rgba(255, 51, 68, 0.24);
+        }
+
+        .btn-primary:hover {
+            box-shadow: 0 18px 40px rgba(255, 51, 68, 0.34);
+        }
+
+        .btn-secondary {
+            border-color: var(--border-strong);
+            color: var(--text-primary);
+            background: rgba(255, 255, 255, 0.055);
+            backdrop-filter: blur(12px);
+        }
+
+        .btn-secondary:hover {
+            border-color: rgba(255, 255, 255, 0.3);
+            background: rgba(255, 255, 255, 0.09);
+        }
+
+        .btn svg {
+            width: 19px;
+            height: 19px;
+        }
+
+        .platforms {
+            justify-content: flex-start;
+            gap: 0.55rem;
+            margin-top: 2.1rem;
+        }
+
+        .platform-item {
+            gap: 0.4rem;
+            padding: 0.45rem 0.65rem;
+            border: 1px solid var(--border);
+            border-radius: 999px;
+            color: var(--text-secondary);
+            background: rgba(255, 255, 255, 0.025);
+            font-size: 0.72rem;
+            font-weight: 600;
+        }
+
+        .platform-item svg {
+            width: 14px;
+            height: 14px;
+            color: #ff7b87;
+        }
+
+        .hero-showcase {
+            position: relative;
+            width: 100%;
+            max-width: 580px;
+            margin-left: auto;
+            isolation: isolate;
+        }
+
+        .hero-showcase::before {
+            position: absolute;
+            inset: 6% 4% -6%;
+            z-index: -1;
+            border-radius: 38px;
+            content: "";
+            background: linear-gradient(135deg, rgba(255, 51, 68, 0.5), rgba(255, 138, 61, 0.06));
+            filter: blur(36px);
+            opacity: 0.55;
+        }
+
+        .showcase-screen {
+            position: relative;
+            padding: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.17);
+            border-radius: 28px;
+            overflow: hidden;
+            background: rgba(18, 18, 23, 0.86);
+            box-shadow: 0 34px 90px rgba(0, 0, 0, 0.55), inset 0 1px rgba(255, 255, 255, 0.08);
+            transform: perspective(1200px) rotateY(-4deg) rotateX(2deg);
+        }
+
+        .showcase-screen img {
+            width: 100%;
+            aspect-ratio: 16 / 9;
+            border-radius: 19px;
+            object-fit: cover;
+        }
+
+        .showcase-status {
+            position: absolute;
+            right: 24px;
+            bottom: 24px;
+            display: flex;
+            align-items: center;
+            gap: 0.55rem;
+            padding: 0.55rem 0.75rem;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 999px;
+            color: #fff;
+            background: rgba(9, 9, 12, 0.78);
+            box-shadow: 0 10px 28px rgba(0, 0, 0, 0.28);
+            backdrop-filter: blur(14px);
+            font-size: 0.73rem;
+            font-weight: 700;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #40db88;
+            box-shadow: 0 0 0 5px rgba(64, 219, 136, 0.13);
+        }
+
+        .showcase-chip {
+            position: absolute;
+            z-index: 2;
+            padding: 0.7rem 0.85rem;
+            border: 1px solid rgba(255, 255, 255, 0.13);
+            border-radius: 14px;
+            color: #fff;
+            background: rgba(17, 17, 22, 0.82);
+            box-shadow: var(--shadow-card);
+            backdrop-filter: blur(14px);
+            font-size: 0.78rem;
+            font-weight: 700;
+        }
+
+        .showcase-chip-top {
+            top: -24px;
+            right: 26px;
+        }
+
+        .showcase-chip-bottom {
+            bottom: -22px;
+            left: -24px;
+        }
+
+        .section,
+        .categories-section .section {
+            width: min(calc(100% - 48px), var(--content-width));
+            max-width: none;
+            margin: 0 auto;
+            padding: clamp(5rem, 9vw, 8rem) 0;
+        }
+
+        .section-header {
+            max-width: 740px;
+            margin: 0 0 clamp(2.25rem, 5vw, 3.75rem);
+            text-align: left;
+        }
+
+        .section-label {
+            margin-bottom: 0.75rem;
+            color: #ff7a87;
+            font-size: 0.75rem;
+            font-weight: 800;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+        }
+
+        .section-title,
+        .download-title {
+            margin: 0;
+            color: #fff;
+            font-size: clamp(2.25rem, 5vw, 4rem);
+            line-height: 1.05;
+            letter-spacing: -0.055em;
+        }
+
+        .section-description,
+        .download-description {
+            max-width: 66ch;
+            margin: 1rem 0 0;
+            color: var(--text-secondary);
+            font-size: clamp(0.98rem, 1.6vw, 1.08rem);
+            line-height: 1.75;
+        }
+
+        .features-grid {
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 1rem;
+        }
+
+        .feature-card {
+            position: relative;
+            min-height: 280px;
+            padding: 1.5rem;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            overflow: hidden;
+            background: linear-gradient(145deg, rgba(255, 255, 255, 0.055), rgba(255, 255, 255, 0.018));
+            box-shadow: none;
+            transition: transform 0.25s ease, border-color 0.25s ease, background 0.25s ease;
+        }
+
+        .feature-card::after {
+            position: absolute;
+            right: -50px;
+            bottom: -65px;
+            width: 140px;
+            height: 140px;
+            border-radius: 50%;
+            content: "";
+            background: var(--primary-soft);
+            filter: blur(28px);
+            opacity: 0;
+            transition: opacity 0.25s ease;
+        }
+
+        .feature-card:hover {
+            border-color: rgba(255, 91, 106, 0.34);
+            background: linear-gradient(145deg, rgba(255, 255, 255, 0.075), rgba(255, 51, 68, 0.025));
+            transform: translateY(-5px);
+        }
+
+        .feature-card:hover::after {
+            opacity: 1;
+        }
+
+        .feature-icon {
+            width: 46px;
+            height: 46px;
+            margin-bottom: 2.1rem;
+            border: 1px solid rgba(255, 91, 106, 0.22);
+            border-radius: 14px;
+            color: #ff7885;
+            background: rgba(255, 51, 68, 0.08);
+        }
+
+        .feature-icon svg {
+            width: 21px;
+            height: 21px;
+        }
+
+        .feature-title {
+            margin: 0 0 0.75rem;
+            color: #fff;
+            font-size: 1.08rem;
+            line-height: 1.25;
+        }
+
+        .feature-description {
+            color: var(--text-secondary);
+            font-size: 0.88rem;
+            line-height: 1.7;
+        }
+
+        .categories-section {
+            margin: 0;
+            background: linear-gradient(180deg, transparent, rgba(255, 255, 255, 0.018) 20%, rgba(255, 255, 255, 0.018) 80%, transparent);
+        }
+
+        .categories-grid {
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 0.85rem;
+        }
+
+        .category-card {
+            min-height: 110px;
+            padding: 1.15rem;
+            border: 1px solid var(--border);
+            border-radius: 17px;
+            background: rgba(255, 255, 255, 0.025);
+            box-shadow: none;
+            transition: transform 0.22s ease, border-color 0.22s ease, background 0.22s ease;
+        }
+
+        .category-card:hover {
+            border-color: var(--border-strong);
+            background: rgba(255, 255, 255, 0.055);
+            transform: translateY(-3px);
+        }
+
+        .category-icon {
+            flex: 0 0 42px;
+            width: 42px;
+            height: 42px;
+            border-radius: 13px;
+            color: #ff7a87;
+            background: rgba(255, 51, 68, 0.09);
+        }
+
+        .category-icon svg {
+            width: 19px;
+            height: 19px;
+        }
+
+        .category-info h4 {
+            color: #fff;
+            font-size: 0.94rem;
+            letter-spacing: -0.02em;
+        }
+
+        .category-info p {
+            margin-top: 0.25rem;
+            color: var(--text-muted);
+            font-size: 0.78rem;
+        }
+
+        .tech-grid {
+            grid-template-columns: repeat(5, minmax(0, 1fr));
+            gap: 0.75rem;
+        }
+
+        .tech-item {
+            min-height: 120px;
+            padding: 1.25rem;
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            background: rgba(255, 255, 255, 0.025);
+            box-shadow: none;
+        }
+
+        .tech-name {
+            color: #fff;
+            font-family: "Space Grotesk", sans-serif;
+            font-size: 0.96rem;
+            font-weight: 600;
+        }
+
+        .tech-version {
+            margin-top: auto;
+            color: #ff7a87;
+            font-size: 0.75rem;
+            font-weight: 700;
+        }
+
+        .screenshots-grid {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 1rem;
+        }
+
+        .screenshot-card {
+            position: relative;
+            padding: 0;
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            overflow: hidden;
+            color: inherit;
+            background: var(--surface);
+            box-shadow: var(--shadow-card);
+            font: inherit;
+            text-align: left;
+            cursor: zoom-in;
+            transition: transform 0.25s ease, border-color 0.25s ease;
+        }
+
+        .screenshot-card:hover {
+            border-color: rgba(255, 255, 255, 0.24);
+            transform: translateY(-6px);
+        }
+
+        .screenshot-placeholder {
+            width: 100%;
+            aspect-ratio: 16 / 10;
+            border-radius: 0 !important;
+            object-fit: cover;
+            transition: transform 0.45s ease;
+        }
+
+        .screenshot-card:hover .screenshot-placeholder {
+            transform: scale(1.025);
+        }
+
+        .screenshot-info {
+            position: relative;
+            display: block;
+            padding: 1.15rem 1.2rem 1.25rem;
+            background: linear-gradient(180deg, rgba(16, 16, 20, 0.9), var(--surface));
+        }
+
+        .screenshot-title {
+            display: block;
+            color: #fff;
+            font-size: 1rem;
+            font-family: "Space Grotesk", "Inter", sans-serif;
+            font-weight: 600;
+        }
+
+        .screenshot-desc {
+            display: block;
+            margin-top: 0.3rem;
+            color: var(--text-muted);
+            font-size: 0.78rem;
+        }
+
+        .screenshot-zoom-hint {
+            top: 14px;
+            right: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            border-radius: 12px;
+            color: #fff;
+            background: rgba(7, 7, 9, 0.72);
+            backdrop-filter: blur(10px);
+            font-size: 1.35rem;
+            font-weight: 400;
+            line-height: 1;
+        }
+
+        .changelog-section {
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+            background: #0c0c10;
+            box-shadow: var(--shadow-card);
+        }
+
+        .changelog-section::before {
+            display: block;
+            height: 42px;
+            border-bottom: 1px solid var(--border);
+            content: "Current release  •  v1.1.71";
+            padding: 0 1.25rem;
+            color: var(--text-muted);
+            font: 600 0.74rem/42px "Inter", sans-serif;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            background: rgba(255, 255, 255, 0.025);
+        }
+
+        .changelog-content {
+            max-height: 520px;
+            padding: 1.5rem;
+            overflow: auto;
+            color: #b7b7c1;
+            font: 0.78rem/1.75 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+            white-space: pre-wrap;
+            scrollbar-color: #393940 transparent;
+        }
+
+        .download-section {
+            position: relative;
+            width: min(calc(100% - 48px), var(--content-width));
+            margin: clamp(4rem, 8vw, 7rem) auto;
+            padding: clamp(3rem, 7vw, 5.75rem);
+            border: 1px solid rgba(255, 114, 126, 0.2);
+            border-radius: var(--radius-xl);
+            overflow: hidden;
+            background:
+                radial-gradient(circle at 86% 18%, rgba(255, 138, 61, 0.2), transparent 28%),
+                radial-gradient(circle at 12% 100%, rgba(255, 51, 68, 0.2), transparent 34%),
+                #111116;
+            box-shadow: var(--shadow-soft);
+            text-align: left;
+        }
+
+        .download-section::after {
+            position: absolute;
+            right: -80px;
+            bottom: -120px;
+            width: 360px;
+            height: 360px;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 50%;
+            content: "";
+            box-shadow: 0 0 0 42px rgba(255, 255, 255, 0.018), 0 0 0 84px rgba(255, 255, 255, 0.012);
+        }
+
+        .download-title,
+        .download-description,
+        .download-buttons,
+        .download-info {
+            position: relative;
+            z-index: 1;
+        }
+
+        .download-description {
+            margin-inline: 0;
+        }
+
+        .download-buttons {
+            justify-content: flex-start;
+            gap: 0.75rem;
+            margin-top: 2rem;
+        }
+
+        .download-info {
+            justify-content: flex-start;
+            gap: 1.25rem;
+            margin-top: 2rem;
+        }
+
+        .download-info-item {
+            color: var(--text-secondary);
+            font-size: 0.78rem;
+            font-weight: 600;
+        }
+
+        .download-info-item svg {
+            color: #ff7a87;
+        }
+
+        .footer {
+            padding: 4.5rem 24px 2.5rem;
+            border-top: 1px solid var(--border);
+            background: #09090c;
+        }
+
+        .footer-content {
+            width: min(100%, var(--content-width));
+            max-width: none;
+            margin: 0 auto;
+            text-align: left;
+        }
+
+        .footer-logo {
+            justify-content: flex-start;
+            margin-bottom: 1rem;
+            font-size: 1.25rem;
+        }
+
+        .footer-text {
+            max-width: 520px;
+            margin: 0;
+            color: var(--text-secondary);
+        }
+
+        .footer-links {
+            justify-content: flex-start;
+            gap: 0.5rem 1.35rem;
+            margin-top: 2rem;
+        }
+
+        .footer-links a {
+            color: var(--text-secondary);
+            font-size: 0.84rem;
+        }
+
+        .footer-links a:hover {
+            color: #fff;
+        }
+
+        .footer-copyright {
+            margin-top: 2.5rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid var(--border);
+            color: var(--text-muted);
+            font-size: 0.75rem;
+        }
+
+        .img-modal-overlay {
+            padding: 24px;
+            background: rgba(3, 3, 5, 0.92);
+            backdrop-filter: blur(16px);
+        }
+
+        .img-modal-inner {
+            width: min(1100px, 100%);
+        }
+
+        .img-modal-img {
+            max-height: 78vh;
+            border: 1px solid var(--border-strong);
+            border-radius: 20px;
+            box-shadow: 0 30px 100px rgba(0, 0, 0, 0.65);
+        }
+
+        .img-modal-close {
+            top: 20px;
+            right: 20px;
+            width: 46px;
+            height: 46px;
+            border: 1px solid var(--border-strong);
+            border-radius: 14px;
+            color: #fff;
+            background: rgba(255, 255, 255, 0.07);
+        }
+
+        @media (max-width: 1100px) {
+            .nav-links a {
+                padding-inline: 0.55rem;
+                font-size: 0.78rem;
+            }
+
+            .hero {
+                grid-template-columns: minmax(0, 1fr) minmax(360px, 0.9fr);
+                gap: 3rem;
+            }
+
+            .features-grid,
+            .categories-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+
+            .feature-card {
+                min-height: 250px;
+            }
+
+            .tech-grid {
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+            }
+        }
+
+        @media (max-width: 900px) {
+            .nav-links {
+                display: none;
+            }
+
+            .nav-toggle {
+                display: flex;
+            }
+
+            .hero {
+                grid-template-columns: 1fr;
+                min-height: auto;
+                padding-top: 150px;
+            }
+
+            .hero-content {
+                max-width: 720px;
+            }
+
+            .hero-showcase {
+                max-width: 720px;
+                margin: 0;
+            }
+
+            .showcase-screen {
+                transform: none;
+            }
+
+            .screenshots-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .screenshot-placeholder {
+                aspect-ratio: 16 / 8;
+            }
+        }
+
+        @media (max-width: 640px) {
+            .nav {
+                top: 10px;
+                width: calc(100% - 20px);
+                min-height: 62px;
+                border-radius: 17px;
+            }
+
+            .logo-icon {
+                width: 38px;
+                height: 38px;
+            }
+
+            .hero,
+            .section,
+            .categories-section .section,
+            .download-section {
+                width: calc(100% - 32px);
+            }
+
+            .hero {
+                gap: 3.25rem;
+                padding: 124px 0 58px;
+            }
+
+            .hero-title {
+                font-size: clamp(3.5rem, 19vw, 5.25rem);
+            }
+
+            .hero-subtitle {
+                font-size: 0.95rem;
+                line-height: 1.7;
+            }
+
+            .hero-buttons,
+            .download-buttons {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .hero-buttons .btn,
+            .download-buttons .btn {
+                justify-content: center;
+                width: 100%;
+            }
+
+            .platforms {
+                gap: 0.4rem;
+            }
+
+            .platform-item {
+                font-size: 0.66rem;
+            }
+
+            .showcase-chip-top {
+                top: -18px;
+                right: 12px;
+            }
+
+            .showcase-chip-bottom {
+                bottom: -18px;
+                left: 10px;
+            }
+
+            .showcase-screen {
+                padding: 7px;
+                border-radius: 21px;
+            }
+
+            .showcase-screen img {
+                border-radius: 14px;
+            }
+
+            .showcase-status {
+                right: 16px;
+                bottom: 16px;
+            }
+
+            .features-grid,
+            .categories-grid,
+            .tech-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .feature-card {
+                min-height: auto;
+            }
+
+            .feature-icon {
+                margin-bottom: 1.5rem;
+            }
+
+            .category-card,
+            .tech-item {
+                min-height: 100px;
+            }
+
+            .download-section {
+                padding: 2rem 1.25rem;
+                border-radius: 24px;
+            }
+
+            .download-info {
+                align-items: flex-start;
+                gap: 0.75rem;
+            }
+
+            .changelog-content {
+                max-height: 420px;
+                padding: 1rem;
+                font-size: 0.7rem;
+            }
+
+            .footer {
+                padding-inline: 16px;
+            }
+
+            .footer-links {
+                align-items: flex-start;
+                flex-direction: column;
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            html {
+                scroll-behavior: auto;
+            }
+
+            *,
+            *::before,
+            *::after {
+                scroll-behavior: auto !important;
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
+    </style>
 </head>
 <body>
+<a class="skip-link" href="#main-content">Skip to content</a>
 <!-- Navigation -->
-<nav class="nav" id="nav">
-    <a href="#" class="logo">
-        <div class="logo-icon">
-            <img src="https://raw.githubusercontent.com/kiduyu-klaus/KiduyuTv_final/refs/heads/main/app/src/main/res/mipmap-xxxhdpi/ic_launcher1.png"
-                 alt="KiduyuTV"
-                 style="width:100%;height:100%;object-fit:contain;border-radius:inherit;">
-        </div>
+<nav class="nav" id="nav" aria-label="Primary navigation">
+    <a href="/" class="logo" aria-label="KiduyuTV home">
+        <div class="logo-icon" role="img" aria-label="KiduyuTV"></div>
         KiduyuTV
     </a>
     <ul class="nav-links">
@@ -1048,7 +2138,7 @@
         <li><a href="#download">Download</a></li>
         <li><a href="/admin-panel/" class="admin-login-link">Admin Login</a></li>
     </ul>
-    <button class="nav-toggle" id="navToggle" aria-label="Open menu" aria-expanded="false">
+    <button class="nav-toggle" id="navToggle" aria-label="Open menu" aria-expanded="false" aria-controls="mobileMenu">
         <span></span>
         <span></span>
         <span></span>
@@ -1056,7 +2146,7 @@
 </nav>
 
 <!-- Mobile Menu Drawer -->
-<div class="mobile-menu" id="mobileMenu">
+<div class="mobile-menu" id="mobileMenu" aria-hidden="true">
     <a href="#features"  class="mobile-nav-link">Features</a>
     <a href="#categories" class="mobile-nav-link">Categories</a>
     <a href="#tech"      class="mobile-nav-link">Tech Stack</a>
@@ -1066,6 +2156,7 @@
     <a href="/admin-panel/" class="mobile-nav-link admin-login-link">Admin Login</a>
 </div>
 
+<main id="main-content">
 <!-- Hero Section -->
 <section class="hero">
     <div class="hero-content">
@@ -1122,6 +2213,16 @@
                 Phone & Tablet
             </div>
         </div>
+    </div>
+    <div class="hero-showcase" aria-label="KiduyuTV home screen preview">
+        <div class="showcase-chip showcase-chip-top">TV-first navigation</div>
+        <div class="showcase-screen">
+            <img src="/app-screenshots/home_screen.png"
+                 alt="KiduyuTV home screen showing featured movies and content rows"
+                 fetchpriority="high">
+            <div class="showcase-status"><span class="status-dot"></span> Ready to stream</div>
+        </div>
+        <div class="showcase-chip showcase-chip-bottom">TV • Fire TV • Mobile</div>
     </div>
 </section>
 
@@ -1241,7 +2342,7 @@
 </section>
 
 <!-- Categories Section -->
-<section class="categories-section" id="categories">
+<section class="section" id="categories">
     <div class="section">
         <div class="section-header">
             <p class="section-label">Content Library</p>
@@ -1412,58 +2513,138 @@
         <p class="section-label">Preview</p>
         <h2 class="section-title">Screenshots</h2>
         <p class="section-description">
-            A glimpse of the immersive streaming experience awaiting you.
+            Explore the real KiduyuTV experience across discovery, Live TV, personal lists, Trakt, account sync, notifications, and in-app updates.
         </p>
     </div>
     <div class="screenshots-grid">
-        <div class="screenshot-card" onclick="openModal(this)">
-            <img src="https://raw.githubusercontent.com/kiduyu-klaus/KiduyuTv_final/refs/heads/main/homescreen.png"
-                 alt="Home Screen"
-                 class="screenshot-placeholder"
-                 style="object-fit:cover;width:100%;border-radius:inherit;">
-            <div class="screenshot-zoom-hint">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-                    <line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/>
-                </svg>
-            </div>
-            <div class="screenshot-info">
-                <h4 class="screenshot-title">Home Screen</h4>
-                <p class="screenshot-desc">Browse curated content with hero carousel</p>
-            </div>
-        </div>
-        <div class="screenshot-card" onclick="openModal(this)">
-            <img src="https://raw.githubusercontent.com/kiduyu-klaus/KiduyuTv_final/refs/heads/main/details.png"
-                 alt="Detail View"
-                 class="screenshot-placeholder"
-                 style="object-fit:cover;width:100%;border-radius:inherit;">
-            <div class="screenshot-zoom-hint">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-                    <line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/>
-                </svg>
-            </div>
-            <div class="screenshot-info">
-                <h4 class="screenshot-title">Detail View</h4>
-                <p class="screenshot-desc">Comprehensive movie and show information</p>
-            </div>
-        </div>
-        <div class="screenshot-card" onclick="openModal(this)">
-            <img src="https://raw.githubusercontent.com/kiduyu-klaus/KiduyuTv_final/refs/heads/main/rows.png"
-                 alt="Detail View"
-                 class="screenshot-placeholder"
-                 style="object-fit:cover;width:100%;border-radius:inherit;">
-            <div class="screenshot-zoom-hint">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-                    <line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/>
-                </svg>
-            </div>
-            <div class="screenshot-info">
-                <h4 class="screenshot-title">Content Rows</h4>
-                <p class="screenshot-desc">Horizontal scrolling with smooth navigation</p>
-            </div>
-        </div>
+        <button type="button" class="screenshot-card" onclick="openModal(this)" aria-label="Open Splash Screen preview">
+            <img src="/app-screenshots/splash_activity.png" alt="KiduyuTV splash screen" class="screenshot-placeholder" loading="lazy" decoding="async">
+            <span class="screenshot-zoom-hint" aria-hidden="true">+</span>
+            <span class="screenshot-info">
+                <span class="screenshot-title">Splash Screen</span>
+                <span class="screenshot-desc">A fast, focused start to the TV experience</span>
+            </span>
+        </button>
+        <button type="button" class="screenshot-card" onclick="openModal(this)" aria-label="Open Google Sign-In preview">
+            <img src="/app-screenshots/google_login.png" alt="KiduyuTV Google sign-in screen" class="screenshot-placeholder" loading="lazy" decoding="async">
+            <span class="screenshot-zoom-hint" aria-hidden="true">+</span>
+            <span class="screenshot-info">
+                <span class="screenshot-title">Google Sign-In</span>
+                <span class="screenshot-desc">Secure account access across supported devices</span>
+            </span>
+        </button>
+        <button type="button" class="screenshot-card" onclick="openModal(this)" aria-label="Open Home Experience preview">
+            <img src="/app-screenshots/home_screen.png" alt="KiduyuTV home screen with featured content and movie rows" class="screenshot-placeholder" loading="lazy" decoding="async">
+            <span class="screenshot-zoom-hint" aria-hidden="true">+</span>
+            <span class="screenshot-info">
+                <span class="screenshot-title">Home Experience</span>
+                <span class="screenshot-desc">Featured entertainment and curated content rows</span>
+            </span>
+        </button>
+        <button type="button" class="screenshot-card" onclick="openModal(this)" aria-label="Open Search preview">
+            <img src="/app-screenshots/search_movies_or_tv_shows.png" alt="KiduyuTV movie and TV show search screen" class="screenshot-placeholder" loading="lazy" decoding="async">
+            <span class="screenshot-zoom-hint" aria-hidden="true">+</span>
+            <span class="screenshot-info">
+                <span class="screenshot-title">Search</span>
+                <span class="screenshot-desc">Find movies and TV shows from one TV-friendly screen</span>
+            </span>
+        </button>
+        <button type="button" class="screenshot-card" onclick="openModal(this)" aria-label="Open Movie Details preview">
+            <img src="/app-screenshots/movie_details_with_collection.png" alt="KiduyuTV movie details and collection screen" class="screenshot-placeholder" loading="lazy" decoding="async">
+            <span class="screenshot-zoom-hint" aria-hidden="true">+</span>
+            <span class="screenshot-info">
+                <span class="screenshot-title">Movie Details</span>
+                <span class="screenshot-desc">Rich metadata, playback actions, and collection browsing</span>
+            </span>
+        </button>
+        <button type="button" class="screenshot-card" onclick="openModal(this)" aria-label="Open My List preview">
+            <img src="/app-screenshots/mylist_screen_with_tabs.png" alt="KiduyuTV My List screen with tabs" class="screenshot-placeholder" loading="lazy" decoding="async">
+            <span class="screenshot-zoom-hint" aria-hidden="true">+</span>
+            <span class="screenshot-info">
+                <span class="screenshot-title">My List</span>
+                <span class="screenshot-desc">Saved movies, shows, companies, networks, and people</span>
+            </span>
+        </button>
+        <button type="button" class="screenshot-card" onclick="openModal(this)" aria-label="Open Live TV preview">
+            <img src="/app-screenshots/livetv_screen_with_tabs.png" alt="KiduyuTV Live TV categories and tabs" class="screenshot-placeholder" loading="lazy" decoding="async">
+            <span class="screenshot-zoom-hint" aria-hidden="true">+</span>
+            <span class="screenshot-info">
+                <span class="screenshot-title">Live TV</span>
+                <span class="screenshot-desc">Channel categories, schedules, favorites, and search</span>
+            </span>
+        </button>
+        <button type="button" class="screenshot-card" onclick="openModal(this)" aria-label="Open Popular Companies preview">
+            <img src="/app-screenshots/popular_companies.png" alt="KiduyuTV popular production companies screen" class="screenshot-placeholder" loading="lazy" decoding="async">
+            <span class="screenshot-zoom-hint" aria-hidden="true">+</span>
+            <span class="screenshot-info">
+                <span class="screenshot-title">Popular Companies</span>
+                <span class="screenshot-desc">Discover titles from leading production companies</span>
+            </span>
+        </button>
+        <button type="button" class="screenshot-card" onclick="openModal(this)" aria-label="Open Popular Networks preview">
+            <img src="/app-screenshots/popular_networks.png" alt="KiduyuTV popular television networks screen" class="screenshot-placeholder" loading="lazy" decoding="async">
+            <span class="screenshot-zoom-hint" aria-hidden="true">+</span>
+            <span class="screenshot-info">
+                <span class="screenshot-title">Popular Networks</span>
+                <span class="screenshot-desc">Browse shows organized by television network</span>
+            </span>
+        </button>
+        <button type="button" class="screenshot-card" onclick="openModal(this)" aria-label="Open Networks and Companies preview">
+            <img src="/app-screenshots/show_popular_networks_companies_list.png" alt="KiduyuTV networks and companies content list" class="screenshot-placeholder" loading="lazy" decoding="async">
+            <span class="screenshot-zoom-hint" aria-hidden="true">+</span>
+            <span class="screenshot-info">
+                <span class="screenshot-title">Network Collections</span>
+                <span class="screenshot-desc">Explore complete catalogs from selected brands</span>
+            </span>
+        </button>
+        <button type="button" class="screenshot-card" onclick="openModal(this)" aria-label="Open Trakt TV preview">
+            <img src="/app-screenshots/trakt_tv_screen.png" alt="KiduyuTV Trakt TV integration screen" class="screenshot-placeholder" loading="lazy" decoding="async">
+            <span class="screenshot-zoom-hint" aria-hidden="true">+</span>
+            <span class="screenshot-info">
+                <span class="screenshot-title">Trakt TV</span>
+                <span class="screenshot-desc">Connect viewing activity with a Trakt account</span>
+            </span>
+        </button>
+        <button type="button" class="screenshot-card" onclick="openModal(this)" aria-label="Open Trakt Profile preview">
+            <img src="/app-screenshots/trakt_tv_screen_page.png" alt="KiduyuTV Trakt profile collection screen" class="screenshot-placeholder" loading="lazy" decoding="async">
+            <span class="screenshot-zoom-hint" aria-hidden="true">+</span>
+            <span class="screenshot-info">
+                <span class="screenshot-title">Trakt Profile</span>
+                <span class="screenshot-desc">Collection, watchlist, and recommended content</span>
+            </span>
+        </button>
+        <button type="button" class="screenshot-card" onclick="openModal(this)" aria-label="Open Firebase Sync preview">
+            <img src="/app-screenshots/firebase_sync.png" alt="KiduyuTV Firebase synchronization screen" class="screenshot-placeholder" loading="lazy" decoding="async">
+            <span class="screenshot-zoom-hint" aria-hidden="true">+</span>
+            <span class="screenshot-info">
+                <span class="screenshot-title">Firebase Sync</span>
+                <span class="screenshot-desc">Keep personal app data synchronized securely</span>
+            </span>
+        </button>
+        <button type="button" class="screenshot-card" onclick="openModal(this)" aria-label="Open Notifications preview">
+            <img src="/app-screenshots/notifications.png" alt="KiduyuTV notifications screen" class="screenshot-placeholder" loading="lazy" decoding="async">
+            <span class="screenshot-zoom-hint" aria-hidden="true">+</span>
+            <span class="screenshot-info">
+                <span class="screenshot-title">Notifications</span>
+                <span class="screenshot-desc">Stay informed about app activity and releases</span>
+            </span>
+        </button>
+        <button type="button" class="screenshot-card" onclick="openModal(this)" aria-label="Open Downloading Update preview">
+            <img src="/app-screenshots/downloading_updates.png" alt="KiduyuTV downloading an application update" class="screenshot-placeholder" loading="lazy" decoding="async">
+            <span class="screenshot-zoom-hint" aria-hidden="true">+</span>
+            <span class="screenshot-info">
+                <span class="screenshot-title">Downloading Update</span>
+                <span class="screenshot-desc">Download the latest release without leaving the app</span>
+            </span>
+        </button>
+        <button type="button" class="screenshot-card" onclick="openModal(this)" aria-label="Open Update Complete preview">
+            <img src="/app-screenshots/updates_download_complete.png" alt="KiduyuTV application update download complete" class="screenshot-placeholder" loading="lazy" decoding="async">
+            <span class="screenshot-zoom-hint" aria-hidden="true">+</span>
+            <span class="screenshot-info">
+                <span class="screenshot-title">Update Complete</span>
+                <span class="screenshot-desc">Clear status when a new APK is ready to install</span>
+            </span>
+        </button>
     </div>
 
 </section>
@@ -1566,7 +2747,7 @@
         Get KiduyuTV for Android TV, Fire TV, phone, or tablet. Choose the flavor that matches your device.
     </p>
     <div class="download-buttons">
-        <a id="download-tv" href="#" class="btn btn-primary" target="_blank" rel="noopener noreferrer" download>
+        <a id="download-tv" href="https://github.com/kiduyu-klaus/KiduyuTv_final/releases/latest" class="btn btn-primary" target="_blank" rel="noopener noreferrer">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
                 <polyline points="7,10 12,15 17,10"/>
@@ -1574,7 +2755,7 @@
             </svg>
             Download for Android TV / Fire TV
         </a>
-        <a id="download-mobile" href="#" class="btn btn-primary" target="_blank" rel="noopener noreferrer" download>
+        <a id="download-mobile" href="https://github.com/kiduyu-klaus/KiduyuTv_final/releases/latest" class="btn btn-primary" target="_blank" rel="noopener noreferrer">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
                 <polyline points="7,10 12,15 17,10"/>
@@ -1615,17 +2796,13 @@
         </div>
     </div>
 </section>
+</main>
 
 <!-- Footer -->
 <footer class="footer">
     <div class="footer-content">
         <div class="footer-logo">
-            <div class="logo-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
-                    <rect x="2" y="7" width="20" height="15" rx="2" ry="2"/>
-                    <polyline points="17,2 12,7 7,2"/>
-                </svg>
-            </div>
+            <div class="logo-icon" role="img" aria-label="KiduyuTV"></div>
             KiduyuTV
         </div>
         <p class="footer-text">
@@ -1645,7 +2822,7 @@
 </footer>
 
 <!-- Image Modal -->
-<div class="img-modal-overlay" id="imgModal" onclick="closeModal(event)">
+<div class="img-modal-overlay" id="imgModal" onclick="closeModal(event)" role="dialog" aria-modal="true" aria-label="Screenshot preview" aria-hidden="true">
     <button class="img-modal-close" onclick="closeModal(event)" aria-label="Close">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <line x1="18" y1="6" x2="6" y2="18"/>
@@ -1659,26 +2836,43 @@
 </div>
 
 <script>
+    let lastFocusedElement = null;
+
     function openModal(card) {
         const img = card.querySelector('img');
         const title = card.querySelector('.screenshot-title');
+        const modal = document.getElementById('imgModal');
+        lastFocusedElement = document.activeElement;
         document.getElementById('imgModalImg').src = img.src;
         document.getElementById('imgModalImg').alt = img.alt;
         document.getElementById('imgModalCaption').textContent = title ? title.textContent : '';
-        document.getElementById('imgModal').classList.add('active');
+        modal.classList.add('active');
+        modal.setAttribute('aria-hidden', 'false');
         document.body.style.overflow = 'hidden';
+        modal.querySelector('.img-modal-close').focus();
     }
 
     function closeModal(e) {
         if (e.target.closest('.img-modal-inner') && !e.target.closest('.img-modal-close')) return;
-        document.getElementById('imgModal').classList.remove('active');
+        const modal = document.getElementById('imgModal');
+        modal.classList.remove('active');
+        modal.setAttribute('aria-hidden', 'true');
         document.body.style.overflow = '';
+        if (lastFocusedElement) lastFocusedElement.focus();
     }
 
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {
-            document.getElementById('imgModal').classList.remove('active');
-            document.body.style.overflow = '';
+            const modal = document.getElementById('imgModal');
+            if (modal.classList.contains('active')) {
+                modal.classList.remove('active');
+                modal.setAttribute('aria-hidden', 'true');
+                document.body.style.overflow = '';
+                if (lastFocusedElement) lastFocusedElement.focus();
+            } else if (mobileMenu.classList.contains('open')) {
+                toggleMenu(false);
+                navToggle.focus();
+            }
         }
     });
 
@@ -1689,6 +2883,8 @@
     function toggleMenu(open) {
         navToggle.classList.toggle('open', open);
         navToggle.setAttribute('aria-expanded', open);
+        navToggle.setAttribute('aria-label', open ? 'Close menu' : 'Open menu');
+        mobileMenu.setAttribute('aria-hidden', String(!open));
         if (open) {
             mobileMenu.style.display = 'flex';
             requestAnimationFrame(() => mobileMenu.classList.add('open'));
