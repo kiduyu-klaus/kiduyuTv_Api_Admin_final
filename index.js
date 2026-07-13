@@ -35,6 +35,7 @@ if (!fs.existsSync(LOG_FILE)) fs.writeFileSync(LOG_FILE, '');
 // ── EXPRESS SETUP ─────────────────────────────────────────────────
 
 const app = express();
+const APP_BASE_PATH = '/api';
 app.use(cors());
 app.use(express.json());
 
@@ -53,7 +54,7 @@ app.use((req, res, next) => {
   next();
 });
 
-app.get('/ic_banner.png', (req, res) => {
+app.get(`${APP_BASE_PATH}/ic_banner.png`, (req, res) => {
   res.set('Cache-Control', 'public, max-age=86400');
   res.sendFile(path.join(__dirname, 'ic_banner.png'));
 });
@@ -66,12 +67,12 @@ function sendPublicLandingPage(req, res) {
 }
 
 // Public KiduyuTV landing page and companion pages.
-app.get('/', sendPublicLandingPage);
-app.get(['/api', '/api/', '/api/index.html'], sendPublicLandingPage);
-app.get('/api/privacy.html', (req, res) => {
+app.get('/', (req, res) => res.redirect(302, `${APP_BASE_PATH}/`));
+app.get([APP_BASE_PATH, `${APP_BASE_PATH}/`, `${APP_BASE_PATH}/index.html`], sendPublicLandingPage);
+app.get(`${APP_BASE_PATH}/privacy.html`, (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'privacy.html'));
 });
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(APP_BASE_PATH, express.static(path.join(__dirname, 'public')));
 
 // ── ROUTER ───────────────────────────────────────────────────────
 
@@ -400,7 +401,11 @@ function getUnsubscribeUrl() {
 }
 
 function getPublicBaseUrl() {
-  return (process.env.PUBLIC_BASE_URL || process.env.APP_BASE_URL || 'https://sflatransport.com').replace(/\/+$/, '');
+  const configuredBase = (process.env.PUBLIC_BASE_URL || process.env.APP_BASE_URL || 'https://sflatransport.com')
+    .replace(/\/+$/, '');
+  return configuredBase.endsWith(APP_BASE_PATH)
+    ? configuredBase
+    : `${configuredBase}${APP_BASE_PATH}`;
 }
 
 function getApkBannerImageUrl() {
@@ -1975,7 +1980,7 @@ router.put('/admin/config/:section', async (req, res) => {
 
 // ── PUBLIC APP CONFIG ENDPOINTS ─────────────────────────────────
 
-app.get('/getAppPackageNames', async (req, res) => {
+router.get('/getAppPackageNames', async (req, res) => {
   try {
     const rtdb = admin.database();
     const sectionDef = getConfigSection('app_packagenames');
@@ -1985,27 +1990,30 @@ app.get('/getAppPackageNames', async (req, res) => {
       app_type_tv: config.app_type_tv || CONFIG_DEFAULTS.app_packagenames.app_type_tv
     });
   } catch (err) {
-    log('error', err.message, { endpoint: '/getAppPackageNames', stack: err.stack });
+    log('error', err.message, { endpoint: '/api/getAppPackageNames', stack: err.stack });
     return res.status(500).json({ error: err.message });
   }
 });
 
-app.get('/getHomeDialogMessage', async (req, res) => {
+router.get('/getHomeDialogMessage', async (req, res) => {
   try {
     const rtdb = admin.database();
     const sectionDef = getConfigSection('home_dialog');
     const config = await initConfigSection(rtdb, sectionDef, 'home_dialog');
     return res.json({ dialog_message: config.dialog_message || CONFIG_DEFAULTS.home_dialog.dialog_message });
   } catch (err) {
-    log('error', err.message, { endpoint: '/getHomeDialogMessage', stack: err.stack });
+    log('error', err.message, { endpoint: '/api/getHomeDialogMessage', stack: err.stack });
     return res.status(500).json({ error: err.message });
   }
 });
 
-// ── MOUNT ROUTER UNDER /api ───────────────────────────────────────
+// ── MOUNT ADMIN PANEL AND ROUTER UNDER /api ───────────────────────
 
-app.use('/api', router);
-app.use('/admin-panel', express.static(path.join(__dirname, 'admin')));
+app.use('/admin-panel', (req, res) => {
+  res.redirect(308, `${APP_BASE_PATH}/admin-panel${req.url}`);
+});
+app.use(`${APP_BASE_PATH}/admin-panel`, express.static(path.join(__dirname, 'admin')));
+app.use(APP_BASE_PATH, router);
 // ── START SERVER ──────────────────────────────────────────────────
 
 const PORT = process.env.PORT || 3000;
