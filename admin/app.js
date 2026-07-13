@@ -232,7 +232,7 @@ document.querySelectorAll('.nav-item').forEach(item => {
     }
     if (tab === 'settings') {
       checkApiStatus();
-      ['streaming', 'api', 'ads', 'filters', 'network', 'features', 'app_packagenames', 'home_dialog'].forEach(loadConfigSection);
+      ['streaming', 'api', 'ads', 'filters', 'network', 'features', 'app_update', 'app_packagenames', 'home_dialog'].forEach(loadConfigSection);
       loadProviders();
     }
   });
@@ -809,47 +809,12 @@ async function applyApkEmailTemplate({ subjectId, textId, htmlId, previewId }) {
     subject.value = buildApkEmailSubject(latestApkLinks);
     subject.dataset.apkAutofilled = 'true';
   }
-  const landingPageUrl = 'https://kiduyu-klaus.github.io/KiduyuTv_final/';
-
   if (messageText && (!messageText.value.trim() || messageText.dataset.apkAutofilled === 'true')) {
-    messageText.value = [
-      'Hi,',
-      '',
-      'The latest KiduyuTV app release is ready to download.',
-      '',
-      'Open the official KiduyuTV download page and choose the build that matches your device.',
-      '',
-      `Download page: ${landingPageUrl}`,
-      '',
-      'If you were not expecting this message, you can ignore it.',
-      '',
-      'KiduyuTV'
-    ].join('\n');
+    messageText.value = buildApkEmailText(latestApkLinks);
     messageText.dataset.apkAutofilled = 'true';
   }
   if (messageHtml && (!messageHtml.value.trim() || messageHtml.dataset.apkAutofilled === 'true')) {
-    messageHtml.value = `<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width,initial-scale=1">
-    <title>Download the latest KiduyuTV app</title>
-    <style>
-      .btn { display:inline-block;padding:14px 18px;border-radius:12px;background:#E50914;color:#FFFFFF;text-decoration:none;font-weight:700; }
-      body { margin:0;padding:0;font-family:Arial,Helvetica,sans-serif;background:#F4F6FA;color:#111111; }
-      .container { width:100%;max-width:600px;margin:0 auto;padding:24px; }
-    </style>
-  </head>
-  <body>
-    <div class="container">
-      <h1 style="font-size:24px;margin:0 0 20px;">A new KiduyuTV release is ready</h1>
-      <p style="margin:0 0 18px;line-height:1.6;">The latest KiduyuTV app release is ready to download. Open the official KiduyuTV download page and choose the build that matches your device.</p>
-      <p><a href="${landingPageUrl}" class="btn">Open the KiduyuTV download page</a></p>
-      <p style="margin:24px 0 0;font-size:13px;color:#6E7686;line-height:1.6;">If you were not expecting this message, you can ignore it.</p>
-      <p style="margin:10px 0 0;font-size:13px;color:#6E7686;line-height:1.6;">KiduyuTV</p>
-    </div>
-  </body>
-</html>`;
+    messageHtml.value = buildApkEmailHtml(latestApkLinks);
     messageHtml.dataset.apkAutofilled = 'true';
   }
 }
@@ -939,20 +904,10 @@ async function sendSingleUserEmail() {
       messageHtml,
       includeApkLinks
     });
-    if (includeApkLinks) {
-      includeApkLinks.checked = false;
-    }
+
     const apkNote = result.apkLinks ? ` with ${result.apkLinks.tagName || 'latest'} APK links` : '';
     setSingleEmailSummary(`Email sent to ${result.email}${apkNote}`);
     showToast('Email sent successfully', 'success');
-    if (includeApkLinks?.checked) {
-      applyApkEmailTemplate({
-        subjectId: 'singleEmailSubject',
-        textId: 'singleEmailMessageText',
-        htmlId: 'singleEmailMessageHtml',
-        previewId: 'singleApkLinksPreview'
-      });
-    }
   } catch (err) {
     setSingleEmailSummary(err.message, 'error');
     showToast(err.message, 'error');
@@ -1119,7 +1074,7 @@ async function loadCurrentSettings() {
   const $content = document.getElementById('currentSettingsContent');
   $content.innerHTML = '<div class="settings-readonly-loading">Loading settings from Firebase…</div>';
 
-  const sections = ['streaming', 'api', 'ads', 'filters', 'network', 'features', 'app_packagenames', 'home_dialog'];
+  const sections = ['streaming', 'api', 'ads', 'filters', 'network', 'features', 'app_update', 'app_packagenames', 'home_dialog'];
   const labels = {
     streaming:  'Streaming &amp; IPTV',
     api:        'API Keys',
@@ -1127,6 +1082,7 @@ async function loadCurrentSettings() {
     filters:    'Filter Lists',
     network:    'Network Settings',
     features:   'Feature Flags',
+    app_update: 'App Update',
     app_packagenames: 'App Package Names',
     home_dialog: 'Home Dialog'
   };
@@ -1137,11 +1093,12 @@ async function loadCurrentSettings() {
     filters:    ['enable_custom_filters', 'easylist_url', 'easyprivacy_url', 'custom_filters_url', 'update_interval_hours', 'filter_timeout_ms', 'filter_fallback_easylist', 'filter_fallback_easyprivacy'],
     network:    ['api_cache_size_mb', 'cache_max_age_minutes', 'cache_max_stale_days', 'api_timeout_seconds', 'max_retries', 'retry_delay_ms'],
     features:   ['disable_ads_globally', 'cursor_speed', 'cursor_hide_delay_ms'],
+    app_update: ['enabled', 'version', 'update_title', 'message', 'download_link_phone', 'download_link_tv'],
     app_packagenames: ['app_type_phone', 'app_type_tv'],
     home_dialog: ['dialog_message']
   };
   const boolFields = new Set([
-    'enable_test_ads', 'use_test_ads', 'enable_custom_filters', 'disable_ads_globally'
+    'enable_test_ads', 'use_test_ads', 'enable_custom_filters', 'disable_ads_globally', 'enabled'
   ]);
   const displayKeys = {
     playlist_url: 'Playlist URL', playlist_epg: 'EPG URL', schedule_api: 'Schedule API',
@@ -1155,6 +1112,8 @@ async function loadCurrentSettings() {
     api_cache_size_mb: 'Cache Size (MB)', cache_max_age_minutes: 'Cache Max Age (min)', cache_max_stale_days: 'Cache Max Stale (days)',
     api_timeout_seconds: 'API Timeout (s)', max_retries: 'Max Retries', retry_delay_ms: 'Retry Delay (ms)',
     disable_ads_globally: 'Ads Globally', cursor_speed: 'Cursor Speed (px)', cursor_hide_delay_ms: 'Cursor Hide Delay (ms)',
+    enabled: 'Update Enabled', version: 'Version', update_title: 'Update Title', message: 'Message',
+    download_link_phone: 'Phone Download URL', download_link_tv: 'TV Download URL',
     app_type_phone: 'Phone Package', app_type_tv: 'TV Package',
     dialog_message: 'Dialog Message'
   };
@@ -1355,6 +1314,20 @@ const CONFIG_SECTIONS = [
     saveLabel: 'Feature flags'
   },
   {
+    id: 'app_update',
+    fields: [
+      { id: 'appUpdateEnabled', name: 'enabled', type: 'boolean' },
+      { id: 'appUpdateVersion', name: 'version' },
+      { id: 'appUpdateTitle', name: 'update_title' },
+      { id: 'appUpdateMessage', name: 'message' },
+      { id: 'appUpdatePhoneLink', name: 'download_link_phone' },
+      { id: 'appUpdateTvLink', name: 'download_link_tv' }
+    ],
+    saveLabel: 'App update configuration',
+    saveButtonId: 'saveAppUpdateConfig',
+    clearButtonId: 'clearAppUpdateConfig'
+  },
+  {
     id: 'app_packagenames',
     fields: [
       { id: 'appPackgenamesPhone', name: 'app_type_phone' },
@@ -1469,7 +1442,7 @@ function clearConfigSection(sectionId) {
 }
 
 // Wire up save / clear buttons for every section.
-['streaming', 'api', 'ads', 'filters', 'network', 'features', 'app_packagenames', 'home_dialog'].forEach(sectionId => {
+['streaming', 'api', 'ads', 'filters', 'network', 'features', 'app_update', 'app_packagenames', 'home_dialog'].forEach(sectionId => {
   const section = findConfigSection(sectionId);
   if (!section) return;
   const cap = sectionId.charAt(0).toUpperCase() + sectionId.slice(1);

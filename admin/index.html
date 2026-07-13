@@ -894,6 +894,51 @@
             <button id="saveFeaturesConfig" class="btn-primary" type="button">Save</button>
           </div>
         </div>
+
+        <div class="settings-section">
+          <h3>App Update</h3>
+          <p class="settings-desc">Manage the in-app update prompt and phone/TV APK links. Saved to <code>app_config/app_update</code>.</p>
+          <div class="form-group">
+            <label class="toggle-row" for="appUpdateEnabled">
+              <span>Enable Update Prompt</span>
+              <span class="toggle">
+                <input type="checkbox" id="appUpdateEnabled">
+                <span class="toggle-slider"></span>
+              </span>
+            </label>
+          </div>
+          <div class="config-grid">
+            <div>
+              <div class="form-group">
+                <label for="appUpdateVersion">Version</label>
+                <input type="text" id="appUpdateVersion" placeholder="2.2.2.2" autocomplete="off">
+              </div>
+              <div class="form-group">
+                <label for="appUpdateTitle">Update Title</label>
+                <input type="text" id="appUpdateTitle" placeholder="Update available" autocomplete="off">
+              </div>
+              <div class="form-group">
+                <label for="appUpdateMessage">Message</label>
+                <textarea id="appUpdateMessage" rows="4" placeholder="Describe the update..." autocomplete="off"></textarea>
+              </div>
+            </div>
+            <div>
+              <div class="form-group">
+                <label for="appUpdatePhoneLink">Phone Download URL</label>
+                <input type="url" id="appUpdatePhoneLink" placeholder="https://github.com/.../phone.apk" autocomplete="off">
+              </div>
+              <div class="form-group">
+                <label for="appUpdateTvLink">TV Download URL</label>
+                <input type="url" id="appUpdateTvLink" placeholder="https://github.com/.../tv.apk" autocomplete="off">
+              </div>
+            </div>
+          </div>
+          <div class="settings-actions">
+            <button id="clearAppUpdateConfig" class="btn-secondary" type="button">Clear</button>
+            <button id="saveAppUpdateConfig" class="btn-primary" type="button">Save</button>
+          </div>
+        </div>
+
         <div class="settings-section">
           <h3>App Package Names</h3>
           <p class="settings-desc">App package identifiers used by the app to detect device type. Saved to <code>app_config/app_packagenames</code>.</p>
