@@ -205,6 +205,7 @@ async function getLatestApkLinks({ forceRefresh = false } = {}) {
   const value = {
     tagName: release.tag_name || '',
     releaseName: release.name || release.tag_name || 'Latest release',
+    releaseNotes: typeof release.body === 'string' ? release.body.trim() : '',
     releaseUrl: release.html_url || 'https://github.com/kiduyu-klaus/KiduyuTv_final/releases/latest',
     phone: {
       name: phone.name,

@@ -1380,6 +1380,9 @@ async function loadConfigSection(sectionId) {
   try {
     const data = await apiCall('GET', `/admin/config/${section.id}?idToken=${encodeURIComponent(idToken)}`);
     applyConfigToFields(section, data || {});
+    if (section.id === 'app_update') {
+      resetAppUpdateGithubLinkControl();
+    }
     if ($meta) {
       if (data && data.createdAt) {
         $meta.textContent = `Created: ${formatDate(Date.parse(data.createdAt))}`;
@@ -1411,6 +1414,11 @@ async function saveConfigSection(sectionId) {
     const payload = { idToken, ...readConfigFromFields(section) };
     const res = await apiCall('PUT', `/admin/config/${section.id}`, payload);
     showToast(`${section.saveLabel} saved`, 'success');
+    if (section.id === 'app_update') {
+      resetAppUpdateGithubLinkControl({
+        statusMessage: 'Saved. Enable GitHub lookup to fetch a newer release.'
+      });
+    }
     if (section.metaId && res.createdAt) {
       const $meta = document.getElementById(section.metaId);
       if ($meta) {
@@ -1450,6 +1458,127 @@ function clearConfigSection(sectionId) {
   const $clear = document.getElementById(section.clearButtonId || `clear${cap}Config`);
   if ($save) $save.addEventListener('click', () => saveConfigSection(sectionId));
   if ($clear) $clear.addEventListener('click', () => clearConfigSection(sectionId));
+});
+
+// ── APP UPDATE: OPTIONAL GITHUB APK LINK LOOKUP ─────────────────────
+let appUpdateManualValues = null;
+
+function setAppUpdateGithubStatus(message, type = '') {
+  const status = document.getElementById('appUpdateGithubStatus');
+  if (!status) return;
+  status.textContent = message;
+  status.className = `form-hint${type ? ` ${type}` : ''}`;
+}
+
+function setAppUpdateGithubFieldsReadOnly(readOnly) {
+  [
+    'appUpdateVersion',
+    'appUpdateTitle',
+    'appUpdateMessage',
+    'appUpdatePhoneLink',
+    'appUpdateTvLink'
+  ].forEach(id => {
+    const input = document.getElementById(id);
+    if (input) input.readOnly = readOnly;
+  });
+}
+
+function setAppUpdateGithubLoading(loading) {
+  const toggle = document.getElementById('appUpdateFetchGithubLinks');
+  const saveButton = document.getElementById('saveAppUpdateConfig');
+  const clearButton = document.getElementById('clearAppUpdateConfig');
+  if (toggle) toggle.disabled = loading;
+  if (saveButton) saveButton.disabled = loading;
+  if (clearButton) clearButton.disabled = loading;
+}
+
+function resetAppUpdateGithubLinkControl({ restoreManual = false, statusMessage } = {}) {
+  const toggle = document.getElementById('appUpdateFetchGithubLinks');
+  const versionInput = document.getElementById('appUpdateVersion');
+  const titleInput = document.getElementById('appUpdateTitle');
+  const messageInput = document.getElementById('appUpdateMessage');
+  const phoneInput = document.getElementById('appUpdatePhoneLink');
+  const tvInput = document.getElementById('appUpdateTvLink');
+
+  if (restoreManual && appUpdateManualValues) {
+    if (versionInput) versionInput.value = appUpdateManualValues.version;
+    if (titleInput) titleInput.value = appUpdateManualValues.title;
+    if (messageInput) messageInput.value = appUpdateManualValues.message;
+    if (phoneInput) phoneInput.value = appUpdateManualValues.phone;
+    if (tvInput) tvInput.value = appUpdateManualValues.tv;
+  }
+
+  if (toggle) {
+    toggle.checked = false;
+  }
+  setAppUpdateGithubLoading(false);
+  setAppUpdateGithubFieldsReadOnly(false);
+  appUpdateManualValues = null;
+  setAppUpdateGithubStatus(
+    statusMessage || 'Enable to populate the version, title, message, and APK URLs from the latest GitHub release.'
+  );
+}
+
+async function handleAppUpdateGithubLinksToggle(event) {
+  const toggle = event.target;
+  const versionInput = document.getElementById('appUpdateVersion');
+  const titleInput = document.getElementById('appUpdateTitle');
+  const messageInput = document.getElementById('appUpdateMessage');
+  const phoneInput = document.getElementById('appUpdatePhoneLink');
+  const tvInput = document.getElementById('appUpdateTvLink');
+
+  if (!toggle.checked) {
+    resetAppUpdateGithubLinkControl({ restoreManual: true });
+    return;
+  }
+
+  appUpdateManualValues = {
+    version: versionInput?.value || '',
+    title: titleInput?.value || '',
+    message: messageInput?.value || '',
+    phone: phoneInput?.value || '',
+    tv: tvInput?.value || ''
+  };
+  setAppUpdateGithubLoading(true);
+  setAppUpdateGithubFieldsReadOnly(true);
+  setAppUpdateGithubStatus('Fetching the latest release details and APK links from GitHub...');
+
+  try {
+    const apkLinks = await apiCall(
+      'GET',
+      `/admin/email/latest-apks?idToken=${encodeURIComponent(idToken)}&refresh=true`
+    );
+    if (!apkLinks.tagName || !apkLinks.phone?.url || !apkLinks.tv?.url) {
+      throw new Error('The latest GitHub release did not return a version and both phone and TV APK links.');
+    }
+
+    const version = String(apkLinks.tagName).replace(/^v(?=\d)/i, '');
+    const title = apkLinks.releaseName || `Update to ${apkLinks.tagName}`;
+    const message = apkLinks.releaseNotes ||
+      `A new KiduyuTV update (${apkLinks.tagName}) is available. Download and install the latest version.`;
+
+    latestApkLinks = apkLinks;
+    if (versionInput) versionInput.value = version;
+    if (titleInput) titleInput.value = title;
+    if (messageInput) messageInput.value = message;
+    if (phoneInput) phoneInput.value = apkLinks.phone.url;
+    if (tvInput) tvInput.value = apkLinks.tv.url;
+    setAppUpdateGithubStatus(
+      `Loaded ${apkLinks.tagName || 'the latest release'}: ${apkLinks.phone.name} and ${apkLinks.tv.name}`
+    );
+    showToast('Latest GitHub app update loaded', 'success');
+  } catch (err) {
+    resetAppUpdateGithubLinkControl({ restoreManual: true });
+    setAppUpdateGithubStatus(`Failed to fetch GitHub APK links: ${err.message}`, 'error');
+    showToast(err.message, 'error');
+  } finally {
+    setAppUpdateGithubLoading(false);
+  }
+}
+
+document.getElementById('appUpdateFetchGithubLinks')?.addEventListener('change', handleAppUpdateGithubLinksToggle);
+document.getElementById('clearAppUpdateConfig')?.addEventListener('click', () => {
+  resetAppUpdateGithubLinkControl();
 });
 
 // ── STREAM PROVIDERS ────────────────────────────────────────────────

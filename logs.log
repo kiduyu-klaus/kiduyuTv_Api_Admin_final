@@ -1,1 +1,199 @@
 [2026-07-13T14:11:03.452Z] [INFO] Server started on port 3000
+[2026-07-13T14:16:05.033Z] [INFO] GET / → 200 (27ms)
+[2026-07-13T14:16:06.169Z] [INFO] GET /style.css → 200 (9ms)
+[2026-07-13T14:16:06.176Z] [INFO] GET /app.js → 200 (12ms)
+[2026-07-13T14:16:07.115Z] [WARN] GET /favicon.ico → 404 (4ms)
+[2026-07-13T14:16:14.052Z] [INFO] admin/verify success {"uid":"dIRRFr9dVHYMQNMboP9RZrrB5ww2","email":"fiverrpro2801@gmail.com"}
+[2026-07-13T14:16:14.056Z] [INFO] POST /admin/verify → 200 (5841ms)
+[2026-07-13T14:16:16.441Z] [INFO] admin/config fetched {"section":"ads"}
+[2026-07-13T14:16:16.446Z] [INFO] GET /admin/config/ads → 200 (1772ms)
+[2026-07-13T14:16:17.215Z] [INFO] admin/analytics computed {"totalUsers":132}
+[2026-07-13T14:16:17.220Z] [INFO] GET /admin/analytics → 200 (2946ms)
+[2026-07-13T14:16:18.331Z] [INFO] admin/users listed {"count":132,"page":1,"search":""}
+[2026-07-13T14:16:18.334Z] [INFO] GET /admin/users → 200 (1037ms)
+[2026-07-13T14:16:19.426Z] [INFO] Health check
+[2026-07-13T14:16:19.431Z] [INFO] GET /health → 200 (8ms)
+[2026-07-13T14:16:19.750Z] [INFO] admin/config fetched {"section":"ads"}
+[2026-07-13T14:16:19.753Z] [INFO] GET /admin/config/ads → 304 (314ms)
+[2026-07-13T14:16:19.757Z] [INFO] admin/config fetched {"section":"filters"}
+[2026-07-13T14:16:19.763Z] [INFO] GET /admin/config/filters → 200 (322ms)
+[2026-07-13T14:16:19.771Z] [INFO] admin/config fetched {"section":"network"}
+[2026-07-13T14:16:19.779Z] [INFO] GET /admin/config/network → 200 (334ms)
+[2026-07-13T14:16:19.786Z] [INFO] admin/config fetched {"section":"features"}
+[2026-07-13T14:16:19.789Z] [INFO] GET /admin/config/features → 200 (324ms)
+[2026-07-13T14:16:20.046Z] [INFO] config section initialised with defaults {"path":"app_config/playlist_url","missingKeys":["createdAt"]}
+[2026-07-13T14:16:20.048Z] [INFO] admin/config fetched {"section":"streaming"}
+[2026-07-13T14:16:20.051Z] [INFO] GET /admin/config/streaming → 200 (617ms)
+[2026-07-13T14:16:20.115Z] [INFO] config section initialised with defaults {"path":"app_config/api_Configuration","missingKeys":["tmdb_bearer_token","trakt_client_id","trakt_client_secret"]}
+[2026-07-13T14:16:20.117Z] [INFO] admin/config fetched {"section":"api"}
+[2026-07-13T14:16:20.119Z] [INFO] GET /admin/config/api → 200 (682ms)
+[2026-07-13T14:16:20.122Z] [INFO] admin/config fetched {"section":"app_update"}
+[2026-07-13T14:16:20.128Z] [INFO] GET /admin/config/app_update → 200 (311ms)
+[2026-07-13T14:16:20.135Z] [INFO] admin/config fetched {"section":"app_packagenames"}
+[2026-07-13T14:16:20.137Z] [INFO] GET /admin/config/app_packagenames → 200 (317ms)
+[2026-07-13T14:16:20.146Z] [INFO] admin/config fetched {"section":"home_dialog"}
+[2026-07-13T14:16:20.151Z] [INFO] GET /admin/config/home_dialog → 200 (327ms)
+[2026-07-13T14:16:20.496Z] [INFO] providers updated with missing/default fields
+[2026-07-13T14:16:20.498Z] [INFO] admin/providers fetched
+[2026-07-13T14:16:20.503Z] [INFO] GET /admin/providers → 200 (676ms)
+[2026-07-13T14:17:16.930Z] [INFO] admin/config fetched {"section":"ads"}
+[2026-07-13T14:17:16.934Z] [INFO] GET /admin/config/ads → 304 (313ms)
+[2026-07-13T14:17:16.940Z] [INFO] admin/config fetched {"section":"filters"}
+[2026-07-13T14:17:16.949Z] [INFO] GET /admin/config/filters → 304 (325ms)
+[2026-07-13T14:17:16.957Z] [INFO] admin/config fetched {"section":"network"}
+[2026-07-13T14:17:16.963Z] [INFO] GET /admin/config/network → 304 (336ms)
+[2026-07-13T14:17:16.968Z] [INFO] admin/config fetched {"section":"features"}
+[2026-07-13T14:17:16.973Z] [INFO] GET /admin/config/features → 304 (343ms)
+[2026-07-13T14:17:17.221Z] [INFO] config section initialised with defaults {"path":"app_config/playlist_url","missingKeys":["createdAt"]}
+[2026-07-13T14:17:17.224Z] [INFO] admin/config fetched {"section":"streaming"}
+[2026-07-13T14:17:17.228Z] [INFO] GET /admin/config/streaming → 304 (613ms)
+[2026-07-13T14:17:17.274Z] [INFO] config section initialised with defaults {"path":"app_config/api_Configuration","missingKeys":["tmdb_bearer_token","trakt_client_id","trakt_client_secret"]}
+[2026-07-13T14:17:17.277Z] [INFO] admin/config fetched {"section":"api"}
+[2026-07-13T14:17:17.280Z] [INFO] GET /admin/config/api → 304 (663ms)
+[2026-07-13T14:17:17.310Z] [INFO] admin/config fetched {"section":"app_update"}
+[2026-07-13T14:17:17.317Z] [INFO] GET /admin/config/app_update → 304 (341ms)
+[2026-07-13T14:17:17.335Z] [INFO] admin/config fetched {"section":"app_packagenames"}
+[2026-07-13T14:17:17.342Z] [INFO] GET /admin/config/app_packagenames → 304 (364ms)
+[2026-07-13T14:17:17.356Z] [INFO] admin/config fetched {"section":"home_dialog"}
+[2026-07-13T14:17:17.359Z] [INFO] GET /admin/config/home_dialog → 304 (380ms)
+[2026-07-13T14:17:18.042Z] [INFO] providers updated with missing/default fields
+[2026-07-13T14:17:18.045Z] [INFO] admin/providers fetched
+[2026-07-13T14:17:18.048Z] [INFO] GET /admin/providers → 304 (668ms)
+[2026-07-13T14:18:08.710Z] [INFO] Health check
+[2026-07-13T14:18:08.713Z] [INFO] GET /health → 200 (3ms)
+[2026-07-13T14:18:09.031Z] [INFO] admin/config fetched {"section":"ads"}
+[2026-07-13T14:18:09.034Z] [INFO] GET /admin/config/ads → 304 (310ms)
+[2026-07-13T14:18:09.038Z] [INFO] admin/config fetched {"section":"filters"}
+[2026-07-13T14:18:09.042Z] [INFO] GET /admin/config/filters → 304 (316ms)
+[2026-07-13T14:18:09.046Z] [INFO] admin/config fetched {"section":"network"}
+[2026-07-13T14:18:09.049Z] [INFO] GET /admin/config/network → 304 (321ms)
+[2026-07-13T14:18:09.057Z] [INFO] admin/config fetched {"section":"features"}
+[2026-07-13T14:18:09.060Z] [INFO] GET /admin/config/features → 304 (319ms)
+[2026-07-13T14:18:09.321Z] [INFO] config section initialised with defaults {"path":"app_config/playlist_url","missingKeys":["createdAt"]}
+[2026-07-13T14:18:09.323Z] [INFO] admin/config fetched {"section":"streaming"}
+[2026-07-13T14:18:09.325Z] [INFO] GET /admin/config/streaming → 304 (609ms)
+[2026-07-13T14:18:09.366Z] [INFO] config section initialised with defaults {"path":"app_config/api_Configuration","missingKeys":["tmdb_bearer_token","trakt_client_id","trakt_client_secret"]}
+[2026-07-13T14:18:09.369Z] [INFO] admin/config fetched {"section":"api"}
+[2026-07-13T14:18:09.371Z] [INFO] GET /admin/config/api → 304 (651ms)
+[2026-07-13T14:18:09.378Z] [INFO] admin/config fetched {"section":"app_update"}
+[2026-07-13T14:18:09.380Z] [INFO] GET /admin/config/app_update → 304 (312ms)
+[2026-07-13T14:18:09.383Z] [INFO] admin/config fetched {"section":"app_packagenames"}
+[2026-07-13T14:18:09.391Z] [INFO] GET /admin/config/app_packagenames → 304 (320ms)
+[2026-07-13T14:18:09.393Z] [INFO] admin/config fetched {"section":"home_dialog"}
+[2026-07-13T14:18:09.397Z] [INFO] GET /admin/config/home_dialog → 304 (323ms)
+[2026-07-13T14:18:09.736Z] [INFO] providers updated with missing/default fields
+[2026-07-13T14:18:09.744Z] [INFO] admin/providers fetched
+[2026-07-13T14:18:09.751Z] [INFO] GET /admin/providers → 304 (675ms)
+[2026-07-13T14:18:16.011Z] [WARN] GET /.well-known/appspecific/com.chrome.devtools.json → 404 (2ms)
+[2026-07-13T14:18:16.045Z] [INFO] GET /style.css → 304 (8ms)
+[2026-07-13T14:24:05.130Z] [INFO] GET / → 200 (26ms)
+[2026-07-13T14:24:06.176Z] [INFO] GET /style.css → 304 (18ms)
+[2026-07-13T14:24:06.209Z] [INFO] GET /app.js → 200 (42ms)
+[2026-07-13T14:24:20.829Z] [INFO] GET / → 304 (2ms)
+[2026-07-13T14:24:21.047Z] [INFO] GET /style.css → 304 (2ms)
+[2026-07-13T14:24:21.057Z] [INFO] GET /app.js → 304 (3ms)
+[2026-07-13T14:24:32.922Z] [INFO] admin/verify success {"uid":"dIRRFr9dVHYMQNMboP9RZrrB5ww2","email":"fiverrpro2801@gmail.com"}
+[2026-07-13T14:24:34.110Z] [INFO] admin/verify success {"uid":"dIRRFr9dVHYMQNMboP9RZrrB5ww2","email":"fiverrpro2801@gmail.com"}
+[2026-07-13T14:24:34.113Z] [INFO] POST /admin/verify → 200 (12515ms)
+[2026-07-13T14:24:34.490Z] [INFO] admin/config fetched {"section":"ads"}
+[2026-07-13T14:24:34.493Z] [INFO] GET /admin/config/ads → 304 (309ms)
+[2026-07-13T14:24:35.238Z] [INFO] admin/analytics computed {"totalUsers":132}
+[2026-07-13T14:24:35.242Z] [INFO] GET /admin/analytics → 304 (1080ms)
+[2026-07-13T14:24:36.056Z] [INFO] admin/users listed {"count":132,"page":1,"search":""}
+[2026-07-13T14:24:36.059Z] [INFO] GET /admin/users → 200 (773ms)
+[2026-07-13T14:24:38.487Z] [INFO] Health check
+[2026-07-13T14:24:38.492Z] [INFO] GET /health → 200 (5ms)
+[2026-07-13T14:24:38.840Z] [INFO] admin/config fetched {"section":"ads"}
+[2026-07-13T14:24:38.843Z] [INFO] GET /admin/config/ads → 304 (321ms)
+[2026-07-13T14:24:38.848Z] [INFO] admin/config fetched {"section":"filters"}
+[2026-07-13T14:24:38.851Z] [INFO] GET /admin/config/filters → 304 (326ms)
+[2026-07-13T14:24:38.860Z] [INFO] admin/config fetched {"section":"network"}
+[2026-07-13T14:24:38.863Z] [INFO] GET /admin/config/network → 304 (334ms)
+[2026-07-13T14:24:38.873Z] [INFO] admin/config fetched {"section":"features"}
+[2026-07-13T14:24:38.876Z] [INFO] GET /admin/config/features → 304 (337ms)
+[2026-07-13T14:24:39.105Z] [INFO] config section initialised with defaults {"path":"app_config/playlist_url","missingKeys":["createdAt"]}
+[2026-07-13T14:24:39.111Z] [INFO] admin/config fetched {"section":"streaming"}
+[2026-07-13T14:24:39.113Z] [INFO] GET /admin/config/streaming → 304 (616ms)
+[2026-07-13T14:24:39.180Z] [INFO] config section initialised with defaults {"path":"app_config/api_Configuration","missingKeys":["tmdb_bearer_token","trakt_client_id","trakt_client_secret"]}
+[2026-07-13T14:24:39.199Z] [INFO] admin/config fetched {"section":"api"}
+[2026-07-13T14:24:39.203Z] [INFO] GET /admin/config/api → 304 (690ms)
+[2026-07-13T14:24:39.211Z] [INFO] admin/config fetched {"section":"app_update"}
+[2026-07-13T14:24:39.222Z] [INFO] GET /admin/config/app_update → 304 (340ms)
+[2026-07-13T14:24:39.228Z] [INFO] admin/config fetched {"section":"app_packagenames"}
+[2026-07-13T14:24:39.230Z] [INFO] GET /admin/config/app_packagenames → 304 (345ms)
+[2026-07-13T14:24:39.240Z] [INFO] admin/config fetched {"section":"home_dialog"}
+[2026-07-13T14:24:39.244Z] [INFO] GET /admin/config/home_dialog → 304 (356ms)
+[2026-07-13T14:24:39.590Z] [INFO] providers updated with missing/default fields
+[2026-07-13T14:24:39.595Z] [INFO] admin/providers fetched
+[2026-07-13T14:24:39.602Z] [INFO] GET /admin/providers → 304 (711ms)
+[2026-07-13T14:24:57.193Z] [INFO] admin/email/latest-apks fetched {"tagName":"v1.1.504"}
+[2026-07-13T14:24:57.200Z] [INFO] GET /admin/email/latest-apks → 200 (3012ms)
+[2026-07-13T14:27:14.943Z] [INFO] admin/config updated {"section":"app_update","fields":["enabled","version","update_title","message","download_link_phone","download_link_tv"]}
+[2026-07-13T14:27:14.946Z] [INFO] PUT /admin/config/app_update → 200 (616ms)
+[2026-07-13T14:29:33.087Z] [INFO] GET / → 200 (3ms)
+[2026-07-13T14:29:33.259Z] [INFO] GET /style.css → 304 (3ms)
+[2026-07-13T14:29:33.438Z] [INFO] GET /app.js → 200 (181ms)
+[2026-07-13T14:29:35.700Z] [INFO] admin/verify success {"uid":"dIRRFr9dVHYMQNMboP9RZrrB5ww2","email":"fiverrpro2801@gmail.com"}
+[2026-07-13T14:29:35.704Z] [INFO] POST /admin/verify → 200 (1622ms)
+[2026-07-13T14:29:36.040Z] [INFO] admin/config fetched {"section":"ads"}
+[2026-07-13T14:29:36.044Z] [INFO] GET /admin/config/ads → 304 (307ms)
+[2026-07-13T14:29:37.135Z] [INFO] admin/analytics computed {"totalUsers":132}
+[2026-07-13T14:29:37.139Z] [INFO] GET /admin/analytics → 304 (1408ms)
+[2026-07-13T14:29:38.118Z] [INFO] admin/users listed {"count":132,"page":1,"search":""}
+[2026-07-13T14:29:38.122Z] [INFO] GET /admin/users → 304 (953ms)
+[2026-07-13T14:29:38.967Z] [INFO] Health check
+[2026-07-13T14:29:38.985Z] [INFO] GET /health → 200 (18ms)
+[2026-07-13T14:29:39.301Z] [INFO] admin/config fetched {"section":"features"}
+[2026-07-13T14:29:39.303Z] [INFO] GET /admin/config/features → 304 (307ms)
+[2026-07-13T14:29:39.333Z] [INFO] admin/config fetched {"section":"ads"}
+[2026-07-13T14:29:39.335Z] [INFO] GET /admin/config/ads → 304 (318ms)
+[2026-07-13T14:29:39.343Z] [INFO] admin/config fetched {"section":"filters"}
+[2026-07-13T14:29:39.346Z] [INFO] GET /admin/config/filters → 304 (326ms)
+[2026-07-13T14:29:39.356Z] [INFO] admin/config fetched {"section":"network"}
+[2026-07-13T14:29:39.360Z] [INFO] GET /admin/config/network → 304 (335ms)
+[2026-07-13T14:29:39.608Z] [INFO] config section initialised with defaults {"path":"app_config/playlist_url","missingKeys":["createdAt"]}
+[2026-07-13T14:29:39.613Z] [INFO] admin/config fetched {"section":"streaming"}
+[2026-07-13T14:29:39.617Z] [INFO] GET /admin/config/streaming → 304 (616ms)
+[2026-07-13T14:29:39.624Z] [INFO] admin/config fetched {"section":"app_update"}
+[2026-07-13T14:29:39.635Z] [INFO] GET /admin/config/app_update → 200 (326ms)
+[2026-07-13T14:29:39.670Z] [INFO] config section initialised with defaults {"path":"app_config/api_Configuration","missingKeys":["tmdb_bearer_token","trakt_client_id","trakt_client_secret"]}
+[2026-07-13T14:29:39.677Z] [INFO] admin/config fetched {"section":"api"}
+[2026-07-13T14:29:39.689Z] [INFO] GET /admin/config/api → 304 (675ms)
+[2026-07-13T14:29:39.708Z] [INFO] admin/config fetched {"section":"app_packagenames"}
+[2026-07-13T14:29:39.716Z] [INFO] GET /admin/config/app_packagenames → 304 (345ms)
+[2026-07-13T14:29:39.724Z] [INFO] admin/config fetched {"section":"home_dialog"}
+[2026-07-13T14:29:39.731Z] [INFO] GET /admin/config/home_dialog → 304 (358ms)
+[2026-07-13T14:29:40.072Z] [INFO] providers updated with missing/default fields
+[2026-07-13T14:29:40.075Z] [INFO] admin/providers fetched
+[2026-07-13T14:29:40.078Z] [INFO] GET /admin/providers → 304 (703ms)
+[2026-07-13T14:29:46.207Z] [INFO] admin/email/latest-apks fetched {"tagName":"v1.1.504"}
+[2026-07-13T14:29:46.213Z] [INFO] GET /admin/email/latest-apks → 304 (991ms)
+[2026-07-13T14:34:56.963Z] [INFO] admin/email/recipients counted {"count":84}
+[2026-07-13T14:34:56.967Z] [INFO] GET /admin/email/recipients → 200 (24481ms)
+[2026-07-13T14:37:07.031Z] [INFO] Health check
+[2026-07-13T14:37:07.034Z] [INFO] GET /health → 200 (28ms)
+[2026-07-13T14:37:07.616Z] [INFO] admin/config fetched {"section":"filters"}
+[2026-07-13T14:37:07.619Z] [INFO] GET /admin/config/filters → 304 (477ms)
+[2026-07-13T14:37:07.640Z] [INFO] admin/config fetched {"section":"network"}
+[2026-07-13T14:37:07.643Z] [INFO] GET /admin/config/network → 304 (495ms)
+[2026-07-13T14:37:07.649Z] [INFO] admin/config fetched {"section":"features"}
+[2026-07-13T14:37:07.652Z] [INFO] GET /admin/config/features → 304 (492ms)
+[2026-07-13T14:37:07.675Z] [INFO] admin/config fetched {"section":"ads"}
+[2026-07-13T14:37:07.677Z] [INFO] GET /admin/config/ads → 304 (500ms)
+[2026-07-13T14:37:07.992Z] [INFO] config section initialised with defaults {"path":"app_config/playlist_url","missingKeys":["createdAt"]}
+[2026-07-13T14:37:07.997Z] [INFO] admin/config fetched {"section":"streaming"}
+[2026-07-13T14:37:08.000Z] [INFO] GET /admin/config/streaming → 304 (961ms)
+[2026-07-13T14:37:08.010Z] [INFO] config section initialised with defaults {"path":"app_config/api_Configuration","missingKeys":["tmdb_bearer_token","trakt_client_id","trakt_client_secret"]}
+[2026-07-13T14:37:08.012Z] [INFO] admin/config fetched {"section":"api"}
+[2026-07-13T14:37:08.014Z] [INFO] GET /admin/config/api → 304 (878ms)
+[2026-07-13T14:37:08.031Z] [INFO] admin/config fetched {"section":"app_update"}
+[2026-07-13T14:37:08.035Z] [INFO] GET /admin/config/app_update → 304 (353ms)
+[2026-07-13T14:37:08.082Z] [INFO] admin/config fetched {"section":"app_packagenames"}
+[2026-07-13T14:37:08.084Z] [INFO] GET /admin/config/app_packagenames → 304 (375ms)
+[2026-07-13T14:37:08.088Z] [INFO] admin/config fetched {"section":"home_dialog"}
+[2026-07-13T14:37:08.094Z] [INFO] GET /admin/config/home_dialog → 304 (384ms)
+[2026-07-13T14:37:08.513Z] [INFO] providers updated with missing/default fields
+[2026-07-13T14:37:08.534Z] [INFO] admin/providers fetched
+[2026-07-13T14:37:08.537Z] [INFO] GET /admin/providers → 304 (810ms)
+[2026-07-13T14:37:14.269Z] [INFO] admin/config updated {"section":"app_update","fields":["enabled","version","update_title","message","download_link_phone","download_link_tv"]}
+[2026-07-13T14:37:14.302Z] [INFO] PUT /admin/config/app_update → 200 (646ms)
