@@ -226,6 +226,7 @@ document.querySelectorAll('.nav-item').forEach(item => {
     if (tab === 'analytics') loadAnalytics();
     if (tab === 'currentSettings') loadCurrentSettings();
     if (tab === 'users') loadUsers();
+    if (tab === 'emailConfig') loadEmailConfig();
     if (tab === 'sendEmail') {
       loadEmailRecipientCount();
       loadLatestApkLinksPreview('apkLinksPreview');
@@ -1875,6 +1876,117 @@ function clearProvidersForm() {
 
 document.getElementById('addProviderBtn')?.addEventListener('click', addProvider);
 document.getElementById('clearProvidersConfig')?.addEventListener('click', clearProvidersForm);
+
+// ── EMAIL CONFIGURATION ─────────────────────────────────────────────
+const EMAIL_CONFIG_FIELDS = [
+  { key: 'SMTP_HOST', id: 'emailConfigSmtpHost' },
+  { key: 'SMTP_PORT', id: 'emailConfigSmtpPort' },
+  { key: 'SMTP_SECURE', id: 'emailConfigSmtpSecure', type: 'boolean' },
+  { key: 'SMTP_REQUIRE_TLS', id: 'emailConfigSmtpRequireTls', type: 'boolean' },
+  { key: 'SMTP_USER', id: 'emailConfigSmtpUser' },
+  { key: 'EMAIL_FROM', id: 'emailConfigFrom' },
+  { key: 'EMAIL_REPLY_TO', id: 'emailConfigReplyTo' },
+  { key: 'EMAIL_BATCH_SIZE', id: 'emailConfigBatchSize' },
+  { key: 'EMAIL_UNSUBSCRIBE_URL', id: 'emailConfigUnsubscribeUrl' },
+  { key: 'PUBLIC_BASE_URL', id: 'emailConfigPublicBaseUrl' },
+  { key: 'APK_BANNER_IMAGE_URL', id: 'emailConfigBannerUrl' },
+  { key: 'GITHUB_RELEASES_API_URL', id: 'emailConfigGithubApiUrl' }
+];
+
+function emailConfigBoolean(value) {
+  return value === true || value === 1 || ['true', '1', 'yes', 'on'].includes(String(value || '').toLowerCase());
+}
+
+function setEmailConfigStatus(message, type = '') {
+  const status = document.getElementById('emailConfigStatus');
+  if (!status) return;
+  status.textContent = message;
+  status.className = `form-hint${type ? ` ${type}` : ''}`;
+}
+
+function setEmailConfigLoading(loading) {
+  const reloadButton = document.getElementById('reloadEmailConfig');
+  const saveButton = document.getElementById('saveEmailConfig');
+  if (reloadButton) reloadButton.disabled = loading;
+  if (saveButton) saveButton.disabled = loading;
+}
+
+function applyEmailConfig(config) {
+  for (const field of EMAIL_CONFIG_FIELDS) {
+    const input = document.getElementById(field.id);
+    if (!input) continue;
+    if (field.type === 'boolean') input.checked = emailConfigBoolean(config[field.key]);
+    else input.value = config[field.key] || '';
+  }
+
+  const password = document.getElementById('emailConfigSmtpPass');
+  const passwordStatus = document.getElementById('emailConfigSmtpPassStatus');
+  if (password) password.value = '';
+  if (passwordStatus) {
+    passwordStatus.textContent = config.SMTP_PASS_CONFIGURED
+      ? 'A password is configured. Leave blank to keep it.'
+      : 'No SMTP password is configured. Enter one before saving.';
+    passwordStatus.className = `form-hint${config.SMTP_PASS_CONFIGURED ? '' : ' error'}`;
+  }
+}
+
+async function loadEmailConfig() {
+  setEmailConfigLoading(true);
+  setEmailConfigStatus('Loading email configuration...');
+  try {
+    const result = await apiCall(
+      'GET',
+      `/admin/email/config?idToken=${encodeURIComponent(idToken)}`
+    );
+    applyEmailConfig(result.config || {});
+    setEmailConfigStatus('Loaded from .env. SMTP passwords are never displayed.');
+  } catch (err) {
+    setEmailConfigStatus(`Failed to load email configuration: ${err.message}`, 'error');
+    showToast(err.message, 'error');
+  } finally {
+    setEmailConfigLoading(false);
+  }
+}
+
+async function saveEmailConfig() {
+  const payload = { idToken };
+  for (const field of EMAIL_CONFIG_FIELDS) {
+    const input = document.getElementById(field.id);
+    if (!input) continue;
+    payload[field.key] = field.type === 'boolean' ? input.checked : input.value;
+  }
+  payload.SMTP_PASS = document.getElementById('emailConfigSmtpPass')?.value || '';
+
+  if (!String(payload.SMTP_HOST || '').trim() ||
+      !String(payload.SMTP_USER || '').trim() ||
+      !String(payload.EMAIL_FROM || '').trim()) {
+    showToast('SMTP host, SMTP username, and From address are required', 'error');
+    return;
+  }
+
+  const confirmed = await showConfirm(
+    'Save Email Configuration',
+    'Update the server .env file and immediately apply these email settings?'
+  );
+  if (!confirmed) return;
+
+  setEmailConfigLoading(true);
+  setEmailConfigStatus('Saving email configuration...');
+  try {
+    const result = await apiCall('PUT', '/admin/email/config', payload);
+    applyEmailConfig(result.config || {});
+    setEmailConfigStatus('Saved to .env and applied to the running server.');
+    showToast('Email configuration saved', 'success');
+  } catch (err) {
+    setEmailConfigStatus(`Failed to save email configuration: ${err.message}`, 'error');
+    showToast(err.message, 'error');
+  } finally {
+    setEmailConfigLoading(false);
+  }
+}
+
+document.getElementById('reloadEmailConfig')?.addEventListener('click', loadEmailConfig);
+document.getElementById('saveEmailConfig')?.addEventListener('click', saveEmailConfig);
 
 // ── SEND EMAIL ───────────────────────────────────────────────────────
 async function loadEmailRecipientCount() {

@@ -121,6 +121,14 @@
           </svg>
           Settings
         </a>
+        <a href="#" class="nav-item" data-tab="emailConfig">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M4 4h16v16H4z"/>
+            <path d="m4 6 8 6 8-6"/>
+            <path d="M8 17h8"/>
+          </svg>
+          Email Configuration
+        </a>
         <a href="#" class="nav-item" data-tab="sendEmail">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <rect x="3" y="5" width="18" height="14" rx="2"/>
@@ -991,6 +999,107 @@
             <p><strong>KiduyuTV Admin Panel</strong></p>
             <p>Version 1.0.0</p>
             <p>Built with Firebase Admin SDK + Express.js</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Email Configuration Tab -->
+      <section id="emailConfigTab" class="tab-content">
+        <div class="tab-header">
+          <h2>Email Configuration</h2>
+          <p class="tab-subtitle">Configure SMTP delivery and email links used by the server</p>
+        </div>
+
+        <div class="settings-section">
+          <h3>SMTP Server</h3>
+          <p class="settings-desc">Saving updates the server's <code>.env</code> file and applies the new values immediately.</p>
+          <div class="config-grid">
+            <div>
+              <div class="form-group">
+                <label for="emailConfigSmtpHost">SMTP Host</label>
+                <input type="text" id="emailConfigSmtpHost" placeholder="smtp.example.com" autocomplete="off">
+              </div>
+              <div class="form-group">
+                <label for="emailConfigSmtpPort">SMTP Port</label>
+                <input type="number" id="emailConfigSmtpPort" placeholder="587" min="1" max="65535" step="1">
+              </div>
+              <div class="form-group">
+                <label class="toggle-row" for="emailConfigSmtpSecure">
+                  <span>Secure connection (TLS from start)</span>
+                  <span class="toggle">
+                    <input type="checkbox" id="emailConfigSmtpSecure">
+                    <span class="toggle-slider"></span>
+                  </span>
+                </label>
+              </div>
+              <div class="form-group">
+                <label class="toggle-row" for="emailConfigSmtpRequireTls">
+                  <span>Require STARTTLS</span>
+                  <span class="toggle">
+                    <input type="checkbox" id="emailConfigSmtpRequireTls">
+                    <span class="toggle-slider"></span>
+                  </span>
+                </label>
+              </div>
+            </div>
+            <div>
+              <div class="form-group">
+                <label for="emailConfigSmtpUser">SMTP Username</label>
+                <input type="text" id="emailConfigSmtpUser" placeholder="SMTP username" autocomplete="off">
+              </div>
+              <div class="form-group">
+                <label for="emailConfigSmtpPass">SMTP Password</label>
+                <input type="password" id="emailConfigSmtpPass" placeholder="Leave blank to keep the stored password" autocomplete="new-password">
+                <span class="form-hint" id="emailConfigSmtpPassStatus">Password status not loaded.</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="settings-section">
+          <h3>Sender and Delivery</h3>
+          <div class="config-grid">
+            <div>
+              <div class="form-group">
+                <label for="emailConfigFrom">From</label>
+                <input type="text" id="emailConfigFrom" placeholder="KiduyuTV &lt;updates@example.com&gt;" autocomplete="off">
+              </div>
+              <div class="form-group">
+                <label for="emailConfigReplyTo">Reply To</label>
+                <input type="text" id="emailConfigReplyTo" placeholder="support@example.com" autocomplete="off">
+              </div>
+            </div>
+            <div>
+              <div class="form-group">
+                <label for="emailConfigBatchSize">Bulk Batch Size</label>
+                <input type="number" id="emailConfigBatchSize" placeholder="50" min="1" max="100" step="1">
+              </div>
+              <div class="form-group">
+                <label for="emailConfigUnsubscribeUrl">Unsubscribe URL</label>
+                <input type="text" id="emailConfigUnsubscribeUrl" placeholder="https://example.com/unsubscribe or mailto:..." autocomplete="off">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="settings-section">
+          <h3>Email and APK URLs</h3>
+          <div class="form-group">
+            <label for="emailConfigPublicBaseUrl">Public Base URL</label>
+            <input type="url" id="emailConfigPublicBaseUrl" placeholder="https://example.com" autocomplete="off">
+          </div>
+          <div class="form-group">
+            <label for="emailConfigBannerUrl">APK Banner Image URL or Path</label>
+            <input type="text" id="emailConfigBannerUrl" placeholder="ic_banner.png or https://example.com/banner.png" autocomplete="off">
+          </div>
+          <div class="form-group">
+            <label for="emailConfigGithubApiUrl">GitHub Releases API URL</label>
+            <input type="url" id="emailConfigGithubApiUrl" placeholder="https://api.github.com/repos/owner/repository/releases/latest" autocomplete="off">
+          </div>
+          <div id="emailConfigStatus" class="form-hint">Load the current configuration before editing.</div>
+          <div class="settings-actions">
+            <button id="reloadEmailConfig" class="btn-secondary" type="button">Reload</button>
+            <button id="saveEmailConfig" class="btn-primary" type="button">Save Email Configuration</button>
           </div>
         </div>
       </section>

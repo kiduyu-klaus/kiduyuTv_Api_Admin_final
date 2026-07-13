@@ -18,6 +18,7 @@ admin.initializeApp({
 // ── FILE LOGGING ─────────────────────────────────────────────────
 
 const LOG_FILE = path.join(__dirname, 'logs.log');
+const ENV_FILE = path.join(__dirname, '.env');
 
 function log(level, message, meta = {}) {
   const timestamp = new Date().toISOString();
@@ -114,12 +115,16 @@ function chunkArray(items, size) {
 
 function getEmailTransporter() {
   const port = Number(process.env.SMTP_PORT || 587);
+  const secure = process.env.SMTP_SECURE === undefined
+    ? port === 465
+    : ['true', '1', 'yes', 'on'].includes(String(process.env.SMTP_SECURE).toLowerCase());
+  const requireTLS = ['true', '1', 'yes', 'on'].includes(String(process.env.SMTP_REQUIRE_TLS || '').toLowerCase());
 
-  // Mailtrap bulk SMTP — STARTTLS on port 587, so secure=false (default).
-  // Auth user is literally "api" with the API token as the password.
   return nodemailer.createTransport({
     host: process.env.SMTP_HOST,
     port,
+    secure,
+    requireTLS,
     auth: {
       user: process.env.SMTP_USER,
       pass: process.env.SMTP_PASS
@@ -130,6 +135,135 @@ function getEmailTransporter() {
 function validateEmailConfig() {
   const required = ['SMTP_HOST', 'SMTP_USER', 'SMTP_PASS', 'EMAIL_FROM'];
   return required.filter(key => !process.env[key]);
+}
+
+const EMAIL_CONFIG_PUBLIC_KEYS = [
+  'SMTP_HOST',
+  'SMTP_PORT',
+  'SMTP_SECURE',
+  'SMTP_REQUIRE_TLS',
+  'SMTP_USER',
+  'EMAIL_FROM',
+  'EMAIL_REPLY_TO',
+  'EMAIL_BATCH_SIZE',
+  'EMAIL_UNSUBSCRIBE_URL',
+  'PUBLIC_BASE_URL',
+  'APK_BANNER_IMAGE_URL',
+  'GITHUB_RELEASES_API_URL'
+];
+
+function getEmailConfigForAdmin() {
+  const config = {};
+  for (const key of EMAIL_CONFIG_PUBLIC_KEYS) {
+    config[key] = process.env[key] || '';
+  }
+  config.SMTP_PASS_CONFIGURED = !!process.env.SMTP_PASS;
+  return config;
+}
+
+function parseConfigBoolean(value) {
+  return value === true || value === 1 || ['true', '1', 'yes', 'on'].includes(String(value || '').toLowerCase());
+}
+
+function cleanEmailConfigPayload(body) {
+  const stringValue = (key, maxLength = 2048) => {
+    const value = typeof body[key] === 'string' ? body[key].trim() : '';
+    if (value.length > maxLength) throw createHttpError(400, `${key} is too long.`);
+    return value;
+  };
+  const integerValue = (key, fallback, min, max) => {
+    const raw = body[key] === '' || body[key] === undefined || body[key] === null ? fallback : body[key];
+    const value = Number(raw);
+    if (!Number.isInteger(value) || value < min || value > max) {
+      throw createHttpError(400, `${key} must be an integer between ${min} and ${max}.`);
+    }
+    return String(value);
+  };
+  const optionalHttpUrl = (key) => {
+    const value = stringValue(key);
+    if (!value) return '';
+    let url;
+    try { url = new URL(value); } catch (_) { throw createHttpError(400, `${key} must be a valid URL.`); }
+    if (!['http:', 'https:'].includes(url.protocol)) {
+      throw createHttpError(400, `${key} must use http or https.`);
+    }
+    return value;
+  };
+
+  const updates = {
+    SMTP_HOST: stringValue('SMTP_HOST', 255),
+    SMTP_PORT: integerValue('SMTP_PORT', 587, 1, 65535),
+    SMTP_SECURE: String(parseConfigBoolean(body.SMTP_SECURE)),
+    SMTP_REQUIRE_TLS: String(parseConfigBoolean(body.SMTP_REQUIRE_TLS)),
+    SMTP_USER: stringValue('SMTP_USER', 512),
+    EMAIL_FROM: stringValue('EMAIL_FROM', 512),
+    EMAIL_REPLY_TO: stringValue('EMAIL_REPLY_TO', 512),
+    EMAIL_BATCH_SIZE: integerValue('EMAIL_BATCH_SIZE', 50, 1, 100),
+    EMAIL_UNSUBSCRIBE_URL: stringValue('EMAIL_UNSUBSCRIBE_URL'),
+    PUBLIC_BASE_URL: optionalHttpUrl('PUBLIC_BASE_URL'),
+    APK_BANNER_IMAGE_URL: stringValue('APK_BANNER_IMAGE_URL'),
+    GITHUB_RELEASES_API_URL: optionalHttpUrl('GITHUB_RELEASES_API_URL')
+  };
+
+  const newPassword = typeof body.SMTP_PASS === 'string' ? body.SMTP_PASS : '';
+  if (newPassword) {
+    if (newPassword.length > 4096) throw createHttpError(400, 'SMTP_PASS is too long.');
+    updates.SMTP_PASS = newPassword;
+  }
+
+  const effectivePassword = updates.SMTP_PASS || process.env.SMTP_PASS;
+  const missing = [
+    ['SMTP_HOST', updates.SMTP_HOST],
+    ['SMTP_USER', updates.SMTP_USER],
+    ['SMTP_PASS', effectivePassword],
+    ['EMAIL_FROM', updates.EMAIL_FROM]
+  ].filter(([, value]) => !value).map(([key]) => key);
+  if (missing.length) {
+    throw createHttpError(400, `Required email settings are missing: ${missing.join(', ')}`);
+  }
+
+  return updates;
+}
+
+function serializeEnvValue(value) {
+  return JSON.stringify(String(value));
+}
+
+function writeEnvUpdates(updates) {
+  const current = fs.existsSync(ENV_FILE) ? fs.readFileSync(ENV_FILE, 'utf8') : '';
+  const eol = current.includes('\r\n') ? '\r\n' : '\n';
+  const hadTrailingEol = current.endsWith('\n');
+  const lines = current ? current.split(/\r?\n/) : [];
+  if (hadTrailingEol && lines[lines.length - 1] === '') lines.pop();
+
+  const values = new Map(Object.entries(updates));
+  const updatedKeys = new Set();
+  const updatedLines = lines.map(line => {
+    const match = line.match(/^\s*(?:export\s+)?([A-Za-z_][A-Za-z0-9_]*)\s*=/);
+    if (!match || !values.has(match[1])) return line;
+    const key = match[1];
+    const value = values.get(key);
+    updatedKeys.add(key);
+    return `${key}=${serializeEnvValue(value)}`;
+  });
+
+  for (const [key, value] of values) {
+    if (updatedKeys.has(key)) continue;
+    updatedLines.push(`${key}=${serializeEnvValue(value)}`);
+  }
+
+  const output = updatedLines.join(eol) + (hadTrailingEol || updatedLines.length ? eol : '');
+  const tempFile = `${ENV_FILE}.tmp-${process.pid}-${Date.now()}`;
+  try {
+    fs.writeFileSync(tempFile, output, { encoding: 'utf8', mode: 0o600 });
+    fs.renameSync(tempFile, ENV_FILE);
+  } finally {
+    if (fs.existsSync(tempFile)) fs.unlinkSync(tempFile);
+  }
+
+  for (const [key, value] of Object.entries(updates)) {
+    process.env[key] = String(value);
+  }
 }
 
 function cleanEmailPayload(body) {
@@ -546,6 +680,35 @@ router.post('/admin/verify', async (req, res) => {
   } catch (err) {
     log('error', err.message, { endpoint: '/api/admin/verify', stack: err.stack });
     return res.status(500).json({ error: err.message });
+  }
+});
+
+router.get('/admin/email/config', async (req, res) => {
+  try {
+    await verifyAdminToken(req.query.idToken);
+    return res.json({ success: true, config: getEmailConfigForAdmin() });
+  } catch (err) {
+    log('error', err.message, { endpoint: '/api/admin/email/config', stack: err.stack });
+    return res.status(err.statusCode || 500).json({ error: err.message });
+  }
+});
+
+router.put('/admin/email/config', async (req, res) => {
+  try {
+    const adminUser = await verifyAdminToken(req.body.idToken);
+    const updates = cleanEmailConfigPayload(req.body);
+    writeEnvUpdates(updates);
+
+    log('info', 'admin/email/config updated', {
+      adminUid: adminUser.uid,
+      fields: Object.keys(updates).filter(key => key !== 'SMTP_PASS'),
+      smtpPasswordUpdated: Object.prototype.hasOwnProperty.call(updates, 'SMTP_PASS')
+    });
+
+    return res.json({ success: true, config: getEmailConfigForAdmin() });
+  } catch (err) {
+    log('error', err.message, { endpoint: '/api/admin/email/config', stack: err.stack });
+    return res.status(err.statusCode || 500).json({ error: err.message });
   }
 });
 

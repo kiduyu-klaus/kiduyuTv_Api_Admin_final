@@ -197,3 +197,57 @@
 [2026-07-13T14:37:08.537Z] [INFO] GET /admin/providers → 304 (810ms)
 [2026-07-13T14:37:14.269Z] [INFO] admin/config updated {"section":"app_update","fields":["enabled","version","update_title","message","download_link_phone","download_link_tv"]}
 [2026-07-13T14:37:14.302Z] [INFO] PUT /admin/config/app_update → 200 (646ms)
+[2026-07-13T14:42:52.007Z] [WARN] GET /.well-known/appspecific/com.chrome.devtools.json → 404 (159ms)
+[2026-07-13T14:42:52.125Z] [INFO] GET /style.css → 304 (74ms)
+[2026-07-13T14:44:59.549Z] [INFO] GET / → 200 (79ms)
+[2026-07-13T14:44:59.937Z] [WARN] GET /.well-known/appspecific/com.chrome.devtools.json → 404 (2ms)
+[2026-07-13T14:45:00.309Z] [INFO] GET /style.css → 304 (8ms)
+[2026-07-13T14:45:01.128Z] [INFO] GET /app.js → 200 (826ms)
+[2026-07-13T14:45:05.252Z] [INFO] admin/verify success {"uid":"dIRRFr9dVHYMQNMboP9RZrrB5ww2","email":"fiverrpro2801@gmail.com"}
+[2026-07-13T14:45:05.258Z] [INFO] POST /admin/verify → 200 (1795ms)
+[2026-07-13T14:45:05.732Z] [INFO] admin/config fetched {"section":"ads"}
+[2026-07-13T14:45:05.736Z] [INFO] GET /admin/config/ads → 304 (317ms)
+[2026-07-13T14:45:07.388Z] [INFO] admin/analytics computed {"totalUsers":132}
+[2026-07-13T14:45:07.391Z] [INFO] GET /admin/analytics → 304 (2002ms)
+[2026-07-13T14:45:08.357Z] [INFO] admin/users listed {"count":132,"page":1,"search":""}
+[2026-07-13T14:45:08.360Z] [INFO] GET /admin/users → 200 (923ms)
+[2026-07-13T14:45:09.984Z] [WARN] GET /api/admin/email/config → 404 (12ms)
+[2026-07-13T14:46:13.139Z] [WARN] GET /api/admin/email/config → 404 (13ms)
+[2026-07-13T14:46:49.133Z] [INFO] GET / → 304 (18ms)
+[2026-07-13T14:46:49.265Z] [INFO] GET /app.js → 304 (2ms)
+[2026-07-13T14:46:49.282Z] [INFO] GET /style.css → 304 (22ms)
+[2026-07-13T14:46:51.346Z] [INFO] admin/verify success {"uid":"dIRRFr9dVHYMQNMboP9RZrrB5ww2","email":"fiverrpro2801@gmail.com"}
+[2026-07-13T14:46:51.349Z] [INFO] POST /admin/verify → 200 (1442ms)
+[2026-07-13T14:46:51.747Z] [INFO] admin/config fetched {"section":"ads"}
+[2026-07-13T14:46:51.762Z] [INFO] GET /admin/config/ads → 304 (330ms)
+[2026-07-13T14:46:52.692Z] [INFO] admin/analytics computed {"totalUsers":132}
+[2026-07-13T14:46:52.697Z] [INFO] GET /admin/analytics → 304 (1285ms)
+[2026-07-13T14:46:53.525Z] [INFO] admin/users listed {"count":132,"page":1,"search":""}
+[2026-07-13T14:46:53.530Z] [INFO] GET /admin/users → 304 (774ms)
+[2026-07-13T14:46:53.613Z] [WARN] GET /api/admin/email/config → 404 (4ms)
+[2026-07-13T14:46:57.325Z] [WARN] GET /api/admin/email/config → 404 (2ms)
+[2026-07-13T14:47:23.230Z] [INFO] Health check
+[2026-07-13T14:47:23.242Z] [INFO] GET /health → 200 (12ms)
+[2026-07-13T14:47:23.565Z] [INFO] admin/config fetched {"section":"features"}
+[2026-07-13T14:47:23.568Z] [INFO] GET /admin/config/features → 304 (305ms)
+[2026-07-13T14:47:23.576Z] [INFO] admin/config fetched {"section":"ads"}
+[2026-07-13T14:47:23.585Z] [INFO] GET /admin/config/ads → 304 (317ms)
+[2026-07-13T14:47:23.590Z] [INFO] admin/config fetched {"section":"filters"}
+[2026-07-13T14:47:23.597Z] [INFO] GET /admin/config/filters → 304 (327ms)
+[2026-07-13T14:47:23.606Z] [INFO] admin/config fetched {"section":"network"}
+[2026-07-13T14:47:23.609Z] [INFO] GET /admin/config/network → 304 (338ms)
+[2026-07-13T14:47:23.919Z] [INFO] config section initialised with defaults {"path":"app_config/playlist_url","missingKeys":["createdAt"]}
+[2026-07-13T14:47:23.920Z] [INFO] admin/config fetched {"section":"streaming"}
+[2026-07-13T14:47:23.923Z] [INFO] GET /admin/config/streaming → 304 (665ms)
+[2026-07-13T14:47:23.926Z] [INFO] config section initialised with defaults {"path":"app_config/api_Configuration","missingKeys":["tmdb_bearer_token","trakt_client_id","trakt_client_secret"]}
+[2026-07-13T14:47:23.929Z] [INFO] admin/config fetched {"section":"api"}
+[2026-07-13T14:47:23.932Z] [INFO] GET /admin/config/api → 304 (666ms)
+[2026-07-13T14:47:23.939Z] [INFO] admin/config fetched {"section":"app_update"}
+[2026-07-13T14:47:23.944Z] [INFO] GET /admin/config/app_update → 200 (326ms)
+[2026-07-13T14:47:23.963Z] [INFO] admin/config fetched {"section":"app_packagenames"}
+[2026-07-13T14:47:23.965Z] [INFO] GET /admin/config/app_packagenames → 304 (346ms)
+[2026-07-13T14:47:23.968Z] [INFO] admin/config fetched {"section":"home_dialog"}
+[2026-07-13T14:47:23.972Z] [INFO] GET /admin/config/home_dialog → 304 (352ms)
+[2026-07-13T14:47:24.306Z] [INFO] providers updated with missing/default fields
+[2026-07-13T14:47:24.308Z] [INFO] admin/providers fetched
+[2026-07-13T14:47:24.313Z] [INFO] GET /admin/providers → 304 (692ms)
