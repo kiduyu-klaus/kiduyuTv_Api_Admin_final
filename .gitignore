@@ -6,3 +6,11 @@ sample_user_data.json
 serviceAccountKey.json
 rtdb-app_config-export.json
 tmp
+movie-scraper-main/example.gif
+movie-scraper-main/index.html
+movie-scraper-main/package.json
+movie-scraper-main/README.md
+movie-scraper-main/vercel.json
+movie-scraper-main/api/fu.wasm
+movie-scraper-main/api/index.js
+movie-scraper-main/api/script.js

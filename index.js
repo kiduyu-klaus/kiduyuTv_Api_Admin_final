@@ -336,11 +336,14 @@ async function fetchJson(url) {
 }
 
 function pickApkAsset(assets, platform) {
-  const lowerPlatform = platform.toLowerCase();
-  return assets.find(asset => {
-    const name = String(asset.name || '').toLowerCase();
-    return name.endsWith('.apk') && name.startsWith(`kiduyutv-${lowerPlatform}-release`);
-  });
+  const patterns = {
+    phone: /^KiduyuTV-phone-release-.+\.apk$/i,
+    tv: /^KiduyuTV-tv-release-.+\.apk$/i
+  };
+  const pattern = patterns[String(platform || '').toLowerCase()];
+  if (!pattern) return undefined;
+
+  return assets.find(asset => pattern.test(String(asset.name || '')));
 }
 
 async function getLatestApkLinks({ forceRefresh = false } = {}) {
@@ -628,6 +631,18 @@ async function sendEmailMessage(transporter, recipients, email, { bcc = false } 
 router.get('/health', (req, res) => {
   log('info', 'Health check');
   res.json({ status: 'ok', app: 'connectTv', timestamp: Date.now() });
+});
+
+// Public latest-release metadata used by the landing-page download cards.
+router.get('/downloads/latest', async (req, res) => {
+  try {
+    const apkLinks = await getLatestApkLinks();
+    res.set('Cache-Control', 'public, max-age=300');
+    return res.json({ success: true, ...apkLinks });
+  } catch (err) {
+    log('error', err.message, { endpoint: '/api/downloads/latest', stack: err.stack });
+    return res.status(err.statusCode || 500).json({ error: err.message });
+  }
 });
 
 // Main endpoint
