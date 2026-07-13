@@ -114,13 +114,33 @@
           </svg>
           Current Settings
         </a>
-        <a href="#" class="nav-item" data-tab="settings">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="12" cy="12" r="3"/>
-            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
-          </svg>
-          Settings
-        </a>
+        <div class="nav-dropdown">
+          <a href="#" class="nav-item nav-dropdown-toggle" data-tab="settings" id="settingsNavItem" aria-expanded="false" aria-controls="settingsNavMenu">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="3"/>
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+            </svg>
+            <span class="nav-item-label">Settings</span>
+            <svg class="nav-dropdown-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="6 9 12 15 18 9"/>
+            </svg>
+          </a>
+          <div class="nav-submenu" id="settingsNavMenu">
+            <a href="#settingsAdminSection" class="nav-subitem" data-settings-section="settingsAdminSection">Admin Management</a>
+            <a href="#settingsDataSection" class="nav-subitem" data-settings-section="settingsDataSection">Data Management</a>
+            <a href="#settingsStreamingSection" class="nav-subitem" data-settings-section="settingsStreamingSection">Streaming</a>
+            <a href="#settingsApiSection" class="nav-subitem" data-settings-section="settingsApiSection">API Configuration</a>
+            <a href="#settingsAdsSection" class="nav-subitem" data-settings-section="settingsAdsSection">Ad Configuration</a>
+            <a href="#settingsFiltersSection" class="nav-subitem" data-settings-section="settingsFiltersSection">Filter Lists</a>
+            <a href="#settingsNetworkSection" class="nav-subitem" data-settings-section="settingsNetworkSection">Network Settings</a>
+            <a href="#settingsProvidersSection" class="nav-subitem" data-settings-section="settingsProvidersSection">Stream Providers</a>
+            <a href="#settingsFeaturesSection" class="nav-subitem" data-settings-section="settingsFeaturesSection">Feature Flags</a>
+            <a href="#settingsAppUpdateSection" class="nav-subitem" data-settings-section="settingsAppUpdateSection">App Update</a>
+            <a href="#settingsPackagesSection" class="nav-subitem" data-settings-section="settingsPackagesSection">App Package Names</a>
+            <a href="#settingsHomeDialogSection" class="nav-subitem" data-settings-section="settingsHomeDialogSection">Home Dialog</a>
+            <a href="#settingsAboutSection" class="nav-subitem" data-settings-section="settingsAboutSection">About</a>
+          </div>
+        </div>
         <a href="#" class="nav-item" data-tab="emailConfig">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M4 4h16v16H4z"/>
@@ -467,7 +487,7 @@
         <div class="tab-header">
           <h2>Settings</h2>
         </div>
-        <div class="settings-section">
+        <div class="settings-section" id="settingsAdminSection">
           <h3>Admin Management</h3>
           <p class="settings-desc">To add new admins, add their Firebase UID to the <code>admins</code> collection in Firestore.</p>
           <div class="settings-info">
@@ -481,7 +501,7 @@
             </div>
           </div>
         </div>
-        <div class="settings-section">
+        <div class="settings-section" id="settingsDataSection">
           <h3>Data Management</h3>
           <p class="settings-desc">View and manage app data from Firebase Realtime Database.</p>
           <div class="settings-actions">
@@ -495,7 +515,7 @@
             </button>
           </div>
         </div>
-        <div class="settings-section">
+        <div class="settings-section" id="settingsStreamingSection">
           <h3>Streaming Configuration</h3>
           <p class="settings-desc">Configure IPTV playlist, EPG, schedule API, and cache duration. Saved to <code>app_config/playlist_url</code>.</p>
           <div class="form-group">
@@ -521,7 +541,7 @@
           </div>
         </div>
 
-        <div class="settings-section">
+        <div class="settings-section" id="settingsApiSection">
           <h3>API Configuration</h3>
           <p class="settings-desc">Third-party API credentials used by the app. Saved to <code>app_config/api_Configuration</code>.</p>
           <div class="form-group">
@@ -542,7 +562,7 @@
           </div>
         </div>
 
-        <div class="settings-section">
+        <div class="settings-section" id="settingsAdsSection">
           <h3>Ad Configuration</h3>
           <p class="settings-desc">Google AdMob ad unit IDs and test mode. Saved to <code>app_config/google_ads_Configuration</code>.</p>
           <div class="config-toggle-grid">
@@ -683,7 +703,7 @@
           </div>
         </div>
 
-        <div class="settings-section">
+        <div class="settings-section" id="settingsFiltersSection">
           <h3>Filter Lists</h3>
           <p class="settings-desc">Ad-blocking filter lists for the app. Saved to <code>app_config/filter_lists_Configuration</code>.</p>
           <div class="form-group">
@@ -739,7 +759,7 @@
           </div>
         </div>
 
-        <div class="settings-section">
+        <div class="settings-section" id="settingsNetworkSection">
           <h3>Network Settings</h3>
           <p class="settings-desc">HTTP client tunables. Saved to <code>app_config/network_settings_Configuration</code>.</p>
           <div class="config-grid">
@@ -780,7 +800,7 @@
           </div>
         </div>
 
-        <div class="settings-section">
+        <div class="settings-section" id="settingsProvidersSection">
           <h3>Stream Providers</h3>
           <p class="settings-desc">Configure stream sources. Each provider is saved at <code>app_config/stream_providers_Configuration/&lt;name&gt;</code>. Use <code>%d</code> for IDs; TV uses three <code>%d</code> for TMDB ID, season, episode.</p>
           <div class="provider-list" id="providersList"></div>
@@ -869,7 +889,7 @@
           </div>
         </div>
 
-        <div class="settings-section">
+        <div class="settings-section" id="settingsFeaturesSection">
           <h3>Feature Flags</h3>
           <p class="settings-desc">Global app toggles. Saved to <code>app_config/feature_flags_Configuration</code>.</p>
           <div class="config-grid">
@@ -903,7 +923,7 @@
           </div>
         </div>
 
-        <div class="settings-section">
+        <div class="settings-section" id="settingsAppUpdateSection">
           <h3>App Update</h3>
           <p class="settings-desc">Manage the in-app update prompt and phone/TV APK links. Saved to <code>app_config/app_update</code>.</p>
           <div class="form-group">
@@ -957,7 +977,7 @@
           </div>
         </div>
 
-        <div class="settings-section">
+        <div class="settings-section" id="settingsPackagesSection">
           <h3>App Package Names</h3>
           <p class="settings-desc">App package identifiers used by the app to detect device type. Saved to <code>app_config/app_packagenames</code>.</p>
           <div class="config-grid">
@@ -980,7 +1000,7 @@
           </div>
         </div>
 
-        <div class="settings-section">
+        <div class="settings-section" id="settingsHomeDialogSection">
           <h3>Home Dialog</h3>
           <p class="settings-desc">A welcome message shown to users on the home screen. Saved to <code>app_config/home_dialog</code>.</p>
           <div class="form-group">
@@ -993,7 +1013,7 @@
           </div>
         </div>
 
-        <div class="settings-section">
+        <div class="settings-section" id="settingsAboutSection">
           <h3>About</h3>
           <div class="about-info">
             <p><strong>KiduyuTV Admin Panel</strong></p>

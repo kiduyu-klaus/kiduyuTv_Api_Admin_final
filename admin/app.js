@@ -215,12 +215,32 @@ function showAdminScreen() {
 }
 
 // ── TAB NAVIGATION ──────────────────────────────────────────────────
+const $settingsNavItem = document.getElementById('settingsNavItem');
+const $settingsNavDropdown = $settingsNavItem?.closest('.nav-dropdown');
+
+function setSettingsDropdownOpen(open) {
+  $settingsNavDropdown?.classList.toggle('open', open);
+  $settingsNavItem?.setAttribute('aria-expanded', String(open));
+}
+
+function loadSettingsData() {
+  checkApiStatus();
+  ['streaming', 'api', 'ads', 'filters', 'network', 'features', 'app_update', 'app_packagenames', 'home_dialog'].forEach(loadConfigSection);
+  loadProviders();
+}
+
 document.querySelectorAll('.nav-item').forEach(item => {
   item.addEventListener('click', (e) => {
     e.preventDefault();
     const tab = item.dataset.tab;
     document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
     item.classList.add('active');
+    if (tab === 'settings') {
+      setSettingsDropdownOpen(!$settingsNavDropdown?.classList.contains('open'));
+    } else {
+      setSettingsDropdownOpen(false);
+      document.querySelectorAll('.nav-subitem').forEach(n => n.classList.remove('active'));
+    }
     document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
     document.getElementById(`${tab}Tab`).classList.add('active');
     if (tab === 'analytics') loadAnalytics();
@@ -232,10 +252,33 @@ document.querySelectorAll('.nav-item').forEach(item => {
       loadLatestApkLinksPreview('apkLinksPreview');
     }
     if (tab === 'settings') {
-      checkApiStatus();
-      ['streaming', 'api', 'ads', 'filters', 'network', 'features', 'app_update', 'app_packagenames', 'home_dialog'].forEach(loadConfigSection);
-      loadProviders();
+      loadSettingsData();
     }
+  });
+});
+
+document.querySelectorAll('.nav-subitem[data-settings-section]').forEach(item => {
+  item.addEventListener('click', (event) => {
+    event.preventDefault();
+    const sectionId = item.dataset.settingsSection;
+    const section = document.getElementById(sectionId);
+    if (!section) return;
+    const settingsWasActive = document.getElementById('settingsTab')?.classList.contains('active');
+
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    $settingsNavItem?.classList.add('active');
+    document.querySelectorAll('.nav-subitem').forEach(n => n.classList.remove('active'));
+    item.classList.add('active');
+    document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+    document.getElementById('settingsTab')?.classList.add('active');
+    setSettingsDropdownOpen(true);
+    if (!settingsWasActive) loadSettingsData();
+
+    window.requestAnimationFrame(() => {
+      section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      window.history.replaceState(null, '', `#${sectionId}`);
+    });
+    closeSidebar();
   });
 });
 
@@ -2140,7 +2183,9 @@ $sidebarBackdrop?.addEventListener('click', closeSidebar);
 
 // Close sidebar when a nav item is clicked on mobile
 document.querySelectorAll('.nav-item').forEach(item => {
-  item.addEventListener('click', closeSidebar);
+  item.addEventListener('click', () => {
+    if (item.dataset.tab !== 'settings') closeSidebar();
+  });
 });
 
 // ── INIT ───────────────────────────────────────────────────────────
