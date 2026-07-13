@@ -1484,6 +1484,94 @@
             left: -24px;
         }
 
+        .ott-section {
+            width: min(calc(100% - 48px), var(--content-width));
+            margin: 0 auto;
+            padding: 1rem 0 clamp(4rem, 8vw, 7rem);
+        }
+
+        .ott-shell {
+            padding: clamp(1.5rem, 4vw, 2.5rem) 0;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+            background:
+                radial-gradient(circle at 50% -60%, rgba(255, 51, 68, 0.18), transparent 58%),
+                rgba(255, 255, 255, 0.025);
+            box-shadow: var(--shadow-card);
+        }
+
+        .ott-heading {
+            margin: 0 1.25rem 1.75rem;
+            color: #fff;
+            font-size: clamp(1.45rem, 3vw, 2.15rem);
+            line-height: 1.15;
+            text-align: center;
+        }
+
+        .ott-heading span {
+            color: #ff7885;
+        }
+
+        .ott-marquee {
+            width: 100%;
+            overflow: hidden;
+            mask-image: linear-gradient(to right, transparent, black 8%, black 92%, transparent);
+            -webkit-mask-image: linear-gradient(to right, transparent, black 8%, black 92%, transparent);
+        }
+
+        .ott-track {
+            display: flex;
+            width: max-content;
+            animation: ott-scroll 30s linear infinite;
+            will-change: transform;
+        }
+
+        .ott-marquee:hover .ott-track {
+            animation-play-state: paused;
+        }
+
+        .ott-logo-group {
+            display: flex;
+            flex: 0 0 auto;
+            align-items: center;
+            gap: 1rem;
+            padding-right: 1rem;
+        }
+
+        .ott-logo-item {
+            display: flex;
+            flex: 0 0 154px;
+            align-items: center;
+            justify-content: center;
+            height: 72px;
+            padding: 0.85rem 1.25rem;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 16px;
+            background: rgba(255, 255, 255, 0.94);
+            box-shadow: 0 10px 28px rgba(0, 0, 0, 0.18);
+            transition: transform 0.2s ease, border-color 0.2s ease;
+        }
+
+        .ott-logo-item:hover {
+            border-color: rgba(255, 91, 106, 0.55);
+            transform: translateY(-3px) scale(1.025);
+        }
+
+        .ott-logo-item img {
+            width: auto;
+            max-width: 118px;
+            height: auto;
+            max-height: 42px;
+            object-fit: contain;
+        }
+
+        @keyframes ott-scroll {
+            to {
+                transform: translateX(-50%);
+            }
+        }
+
         .section,
         .categories-section .section {
             width: min(calc(100% - 48px), var(--content-width));
@@ -1998,7 +2086,8 @@
             .hero,
             .section,
             .categories-section .section,
-            .download-section {
+            .download-section,
+            .ott-section {
                 width: calc(100% - 32px);
             }
 
@@ -2053,6 +2142,27 @@
 
             .showcase-screen img {
                 border-radius: 14px;
+            }
+
+            .ott-shell {
+                border-radius: 20px;
+            }
+
+            .ott-logo-group {
+                gap: 0.65rem;
+                padding-right: 0.65rem;
+            }
+
+            .ott-logo-item {
+                flex-basis: 126px;
+                height: 62px;
+                padding: 0.7rem 0.9rem;
+                border-radius: 14px;
+            }
+
+            .ott-logo-item img {
+                max-width: 98px;
+                max-height: 36px;
             }
 
             .showcase-status {
@@ -2118,8 +2228,31 @@
                 animation-iteration-count: 1 !important;
                 transition-duration: 0.01ms !important;
             }
+
+            .ott-marquee {
+                overflow-x: auto;
+                padding: 0 1rem 0.5rem;
+                mask-image: none;
+                -webkit-mask-image: none;
+                scrollbar-color: #393940 transparent;
+            }
+
+            .ott-track {
+                animation: none !important;
+            }
+
+            .ott-logo-group[aria-hidden="true"] {
+                display: none;
+            }
         }
     </style>
+    <!-- Tailwind CDN (preflight disabled so it doesn't reset existing site styles) -->
+    <script src="https://cdn.tailwindcss.com?plugins=forms,typography,aspect-ratio,line-clamp,container-queries"></script>
+    <script>
+      tailwind.config = {
+        corePlugins: { preflight: false }
+      };
+    </script>
 </head>
 <body>
 <a class="skip-link" href="#main-content">Skip to content</a>
@@ -2223,6 +2356,43 @@
             <div class="showcase-status"><span class="status-dot"></span> Ready to stream</div>
         </div>
         <div class="showcase-chip showcase-chip-bottom">TV • Fire TV • Mobile</div>
+    </div>
+</section>
+
+<!-- Streaming services -->
+<section class="ott-section" aria-labelledby="ott-heading">
+    <div class="ott-shell">
+        <h2 class="ott-heading" id="ott-heading">Stream from over <span>30+ OTTs</span></h2>
+        <div class="ott-marquee">
+            <div class="ott-track">
+                <div class="ott-logo-group">
+                    <span class="ott-logo-item"><img src="https://www.screenscape.fun/netflix.svg" alt="Netflix" width="120" height="50" loading="lazy" decoding="async"></span>
+                    <span class="ott-logo-item"><img src="https://www.screenscape.fun/primevideo.svg" alt="Prime Video" width="120" height="50" loading="lazy" decoding="async"></span>
+                    <span class="ott-logo-item"><img src="https://www.screenscape.fun/hulu-logo-svgrepo-com.svg" alt="Hulu" width="120" height="50" loading="lazy" decoding="async"></span>
+                    <span class="ott-logo-item"><img src="https://www.screenscape.fun/disneyplus-svgrepo-com.svg" alt="Disney+" width="120" height="50" loading="lazy" decoding="async"></span>
+                    <span class="ott-logo-item"><img src="https://www.screenscape.fun/appletv-svgrepo-com.svg" alt="Apple TV" width="120" height="50" loading="lazy" decoding="async"></span>
+                    <span class="ott-logo-item"><img src="https://www.screenscape.fun/hbo-max-svgrepo-com.svg" alt="HBO Max" width="120" height="50" loading="lazy" decoding="async"></span>
+                    <span class="ott-logo-item"><img src="https://www.screenscape.fun/paramount-plus-svgrepo-com.svg" alt="Paramount+" width="120" height="50" loading="lazy" decoding="async"></span>
+                    <span class="ott-logo-item"><img src="https://www.screenscape.fun/Discovery_Plus_logo.svg" alt="Discovery+" width="120" height="50" loading="lazy" decoding="async"></span>
+                    <span class="ott-logo-item"><img src="https://www.screenscape.fun/sony-pictures-1.svg" alt="Sony Pictures" width="120" height="50" loading="lazy" decoding="async"></span>
+                    <span class="ott-logo-item"><img src="https://www.screenscape.fun/voot-seeklogo.svg" alt="Voot" width="120" height="50" loading="lazy" decoding="async"></span>
+                    <span class="ott-logo-item"><img src="https://www.screenscape.fun/Zee5_Logo_2018-2025.svg" alt="Zee5" width="120" height="50" loading="lazy" decoding="async"></span>
+                </div>
+                <div class="ott-logo-group" aria-hidden="true">
+                    <span class="ott-logo-item"><img src="https://www.screenscape.fun/netflix.svg" alt="" width="120" height="50" loading="lazy" decoding="async"></span>
+                    <span class="ott-logo-item"><img src="https://www.screenscape.fun/primevideo.svg" alt="" width="120" height="50" loading="lazy" decoding="async"></span>
+                    <span class="ott-logo-item"><img src="https://www.screenscape.fun/hulu-logo-svgrepo-com.svg" alt="" width="120" height="50" loading="lazy" decoding="async"></span>
+                    <span class="ott-logo-item"><img src="https://www.screenscape.fun/disneyplus-svgrepo-com.svg" alt="" width="120" height="50" loading="lazy" decoding="async"></span>
+                    <span class="ott-logo-item"><img src="https://www.screenscape.fun/appletv-svgrepo-com.svg" alt="" width="120" height="50" loading="lazy" decoding="async"></span>
+                    <span class="ott-logo-item"><img src="https://www.screenscape.fun/hbo-max-svgrepo-com.svg" alt="" width="120" height="50" loading="lazy" decoding="async"></span>
+                    <span class="ott-logo-item"><img src="https://www.screenscape.fun/paramount-plus-svgrepo-com.svg" alt="" width="120" height="50" loading="lazy" decoding="async"></span>
+                    <span class="ott-logo-item"><img src="https://www.screenscape.fun/Discovery_Plus_logo.svg" alt="" width="120" height="50" loading="lazy" decoding="async"></span>
+                    <span class="ott-logo-item"><img src="https://www.screenscape.fun/sony-pictures-1.svg" alt="" width="120" height="50" loading="lazy" decoding="async"></span>
+                    <span class="ott-logo-item"><img src="https://www.screenscape.fun/voot-seeklogo.svg" alt="" width="120" height="50" loading="lazy" decoding="async"></span>
+                    <span class="ott-logo-item"><img src="https://www.screenscape.fun/Zee5_Logo_2018-2025.svg" alt="" width="120" height="50" loading="lazy" decoding="async"></span>
+                </div>
+            </div>
+        </div>
     </div>
 </section>
 
