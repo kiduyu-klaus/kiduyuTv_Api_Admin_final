@@ -1,0 +1,1756 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="KiduyuTV - A dual-form-factor Android streaming app for Android TV, Fire TV, phones, and tablets with movies, TV shows, Live TV, schedule playback, Trakt, Firebase sync, and multi-network ads">
+    <title>KiduyuTV - Android TV, Fire TV & Mobile Streaming</title>
+    <link rel="icon" type="image/png" href="https://raw.githubusercontent.com/kiduyu-klaus/KiduyuTv_final/refs/heads/main/app/src/main/res/mipmap-xxxhdpi/ic_launcher1.png">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #E50914;
+            --primary-dark: #B20710;
+            --dark-bg: #0a0a0a;
+            --card-bg: #141414;
+            --card-hover: #1f1f1f;
+            --text-primary: #ffffff;
+            --text-secondary: #a3a3a3;
+            --text-muted: #666666;
+            --gradient-primary: linear-gradient(135deg, #E50914 0%, #831010 100%);
+            --gradient-dark: linear-gradient(180deg, rgba(10,10,10,0) 0%, rgba(10,10,10,1) 100%);
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: var(--dark-bg);
+            color: var(--text-primary);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        /* Navigation */
+        .nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: linear-gradient(180deg, rgba(10,10,10,0.95) 0%, rgba(10,10,10,0) 100%);
+            transition: background 0.3s ease;
+        }
+
+        .nav.scrolled {
+            background: rgba(10,10,10,0.98);
+            backdrop-filter: blur(10px);
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            text-decoration: none;
+        }
+
+        .logo-icon {
+            width: 40px;
+            height: 40px;
+            background: var(--gradient-primary);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            list-style: none;
+        }
+
+        .nav-links a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.3s ease;
+            font-size: 0.95rem;
+        }
+
+        .nav-links a:hover {
+            color: var(--text-primary);
+        }
+
+        .nav-links .admin-login-link {
+            padding: 0.55rem 1rem;
+            border-radius: 999px;
+            color: #fff;
+            background: var(--primary);
+        }
+
+        .nav-links .admin-login-link:hover {
+            color: #fff;
+            background: var(--primary-dark);
+        }
+
+        /* Hero Section */
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            padding: 6rem 2rem 4rem;
+            background: radial-gradient(ellipse at center top, rgba(229, 9, 20, 0.15) 0%, transparent 50%);
+        }
+
+        .hero-content {
+            max-width: 900px;
+            text-align: center;
+        }
+
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: rgba(229, 9, 20, 0.2);
+            border: 1px solid rgba(229, 9, 20, 0.3);
+            padding: 0.5rem 1rem;
+            border-radius: 50px;
+            font-size: 0.85rem;
+            color: var(--primary);
+            margin-bottom: 1.5rem;
+        }
+
+        .hero-title {
+            font-size: clamp(2.5rem, 8vw, 5rem);
+            font-weight: 800;
+            line-height: 1.1;
+            margin-bottom: 1.5rem;
+            background: linear-gradient(135deg, #ffffff 0%, #cccccc 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .hero-subtitle {
+            font-size: clamp(1.1rem, 2.5vw, 1.4rem);
+            color: var(--text-secondary);
+            max-width: 650px;
+            margin: 0 auto 2.5rem;
+            font-weight: 400;
+        }
+
+        .hero-buttons {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 1rem 2rem;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 1rem;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            border: none;
+        }
+
+        .btn-primary {
+            background: var(--gradient-primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 40px rgba(229, 9, 20, 0.4);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-primary);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.2);
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+
+        .btn svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        /* Platform Badges */
+        .platforms {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            margin-top: 3rem;
+            flex-wrap: wrap;
+        }
+
+        .platform-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        .platform-item svg {
+            width: 24px;
+            height: 24px;
+            color: var(--text-secondary);
+        }
+
+        /* Section Styles */
+        .section {
+            padding: 5rem 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .section-header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .section-label {
+            color: var(--primary);
+            font-size: 0.9rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 0.75rem;
+        }
+
+        .section-title {
+            font-size: clamp(2rem, 5vw, 3rem);
+            font-weight: 700;
+            margin-bottom: 1rem;
+        }
+
+        .section-description {
+            color: var(--text-secondary);
+            max-width: 600px;
+            margin: 0 auto;
+            font-size: 1.1rem;
+        }
+
+        /* Features Grid */
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .feature-card {
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 2rem;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: all 0.3s ease;
+        }
+
+        .feature-card:hover {
+            background: var(--card-hover);
+            border-color: rgba(229, 9, 20, 0.3);
+            transform: translateY(-4px);
+        }
+
+        .feature-icon {
+            width: 56px;
+            height: 56px;
+            background: linear-gradient(135deg, rgba(229, 9, 20, 0.2) 0%, rgba(229, 9, 20, 0.1) 100%);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1.25rem;
+        }
+
+        .feature-icon svg {
+            width: 28px;
+            height: 28px;
+            color: var(--primary);
+        }
+
+        .feature-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 0.75rem;
+        }
+
+        .feature-description {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            line-height: 1.7;
+        }
+
+        /* Categories Section */
+        .categories-section {
+            background: var(--card-bg);
+            border-radius: 24px;
+            padding: 4rem 2rem;
+            margin: 2rem auto;
+            max-width: 1200px;
+        }
+
+        .categories-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+        }
+
+        .category-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            transition: all 0.3s ease;
+            cursor: default;
+        }
+
+        .category-card:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(229, 9, 20, 0.3);
+        }
+
+        .category-icon {
+            width: 48px;
+            height: 48px;
+            background: var(--gradient-primary);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .category-icon svg {
+            width: 24px;
+            height: 24px;
+            color: white;
+        }
+
+        .category-info h4 {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+
+        .category-info p {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+        }
+
+        /* Tech Stack */
+        .tech-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 1rem;
+        }
+
+        .tech-item {
+            background: var(--card-bg);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 1.5rem 1rem;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .tech-item:hover {
+            border-color: rgba(229, 9, 20, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .tech-name {
+            font-weight: 600;
+            font-size: 0.95rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .tech-version {
+            color: var(--primary);
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+
+        /* Screenshots */
+        .screenshots-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .screenshot-card {
+            background: var(--card-bg);
+            border-radius: 16px;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: all 0.3s ease;
+        }
+
+        .screenshot-card:hover {
+            border-color: rgba(229, 9, 20, 0.3);
+            transform: scale(1.02);
+        }
+
+        .screenshot-placeholder {
+            aspect-ratio: 16/10;
+            background: linear-gradient(135deg, rgba(229, 9, 20, 0.1) 0%, rgba(20, 20, 20, 1) 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        .screenshot-info {
+            padding: 1.25rem;
+        }
+
+        .screenshot-title {
+            font-weight: 600;
+            font-size: 1rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .screenshot-desc {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+        }
+
+        /* Screenshot Modal */
+        .screenshot-card {
+            cursor: zoom-in;
+        }
+
+        .screenshot-card .screenshot-zoom-hint {
+            position: absolute;
+            top: 0.75rem;
+            right: 0.75rem;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(4px);
+            border-radius: 6px;
+            padding: 0.35rem 0.5rem;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+            pointer-events: none;
+        }
+
+        .screenshot-card {
+            position: relative;
+        }
+
+        .screenshot-card:hover .screenshot-zoom-hint {
+            opacity: 1;
+        }
+
+        .screenshot-zoom-hint svg {
+            width: 16px;
+            height: 16px;
+            color: white;
+            display: block;
+        }
+
+        .img-modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 9999;
+            background: rgba(0, 0, 0, 0.92);
+            backdrop-filter: blur(8px);
+            align-items: center;
+            justify-content: center;
+            padding: 1.5rem;
+            cursor: zoom-out;
+        }
+
+        .img-modal-overlay.active {
+            display: flex;
+        }
+
+        /* Changelog Section */
+        .changelog-section {
+            background: var(--card-bg);
+            border-radius: 24px;
+            padding: 4rem 2rem;
+            margin: 2rem auto;
+            max-width: 1200px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .changelog-content {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 12px;
+            padding: 2rem;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            line-height: 1.5;
+            white-space: pre-wrap;
+            overflow-x: auto;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            max-height: 600px;
+            overflow-y: auto;
+        }
+
+        .changelog-content::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .changelog-content::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .changelog-content::-webkit-scrollbar-thumb {
+            background: rgba(229, 9, 20, 0.3);
+            border-radius: 4px;
+        }
+
+        .changelog-content::-webkit-scrollbar-thumb:hover {
+            background: rgba(229, 9, 20, 0.5);
+        }
+
+        .img-modal-inner {
+            position: relative;
+            max-width: 95vw;
+            max-height: 90vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1rem;
+            animation: modalIn 0.25s ease;
+        }
+
+        @keyframes modalIn {
+            from { opacity: 0; transform: scale(0.92); }
+            to   { opacity: 1; transform: scale(1); }
+        }
+
+        .img-modal-img {
+            max-width: 95vw;
+            max-height: 80vh;
+            width: auto;
+            height: auto;
+            border-radius: 12px;
+            box-shadow: 0 30px 80px rgba(0, 0, 0, 0.8);
+            cursor: default;
+        }
+
+        .img-modal-caption {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            text-align: center;
+        }
+
+        .img-modal-close {
+            position: fixed;
+            top: 1.25rem;
+            right: 1.25rem;
+            width: 40px;
+            height: 40px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: background 0.2s ease;
+            color: white;
+        }
+
+        .img-modal-close:hover {
+            background: rgba(229, 9, 20, 0.5);
+            border-color: rgba(229, 9, 20, 0.6);
+        }
+
+        .img-modal-close svg {
+            width: 18px;
+            height: 18px;
+        }
+
+        /* Download Section */
+        .download-section {
+            background: linear-gradient(135deg, rgba(229, 9, 20, 0.15) 0%, rgba(10, 10, 10, 1) 100%);
+            border-radius: 24px;
+            padding: 4rem 2rem;
+            text-align: center;
+            margin: 2rem auto;
+            max-width: 900px;
+            border: 1px solid rgba(229, 9, 20, 0.2);
+        }
+
+        .download-title {
+            font-size: clamp(1.8rem, 4vw, 2.5rem);
+            font-weight: 700;
+            margin-bottom: 1rem;
+        }
+
+        .download-description {
+            color: var(--text-secondary);
+            max-width: 550px;
+            margin: 0 auto 2rem;
+            font-size: 1.1rem;
+        }
+
+        .download-buttons {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .download-info {
+            margin-top: 2rem;
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .download-info-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        .download-info-item svg {
+            width: 18px;
+            height: 18px;
+            color: var(--primary);
+        }
+
+        /* Footer */
+        .footer {
+            padding: 3rem 2rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            text-align: center;
+        }
+
+        .footer-content {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .footer-logo {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.75rem;
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+        }
+
+        .footer-text {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .footer-links {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .footer-links a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: color 0.3s ease;
+        }
+
+        .footer-links a:hover {
+            color: var(--primary);
+        }
+
+        .footer-copyright {
+            margin-top: 2rem;
+            padding-top: 2rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            color: var(--text-muted);
+            font-size: 0.85rem;
+        }
+
+        /* Hamburger */
+        .nav-toggle {
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            gap: 5px;
+            width: 40px;
+            height: 40px;
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(255,255,255,0.12);
+            border-radius: 8px;
+            cursor: pointer;
+            padding: 8px;
+            transition: background 0.2s ease;
+            z-index: 1100;
+        }
+
+        .nav-toggle:hover {
+            background: rgba(229,9,20,0.2);
+            border-color: rgba(229,9,20,0.3);
+        }
+
+        .nav-toggle span {
+            display: block;
+            height: 2px;
+            background: var(--text-primary);
+            border-radius: 2px;
+            transition: all 0.3s ease;
+            transform-origin: center;
+        }
+
+        .nav-toggle.open span:nth-child(1) {
+            transform: translateY(7px) rotate(45deg);
+        }
+
+        .nav-toggle.open span:nth-child(2) {
+            opacity: 0;
+            transform: scaleX(0);
+        }
+
+        .nav-toggle.open span:nth-child(3) {
+            transform: translateY(-7px) rotate(-45deg);
+        }
+
+        /* Mobile drawer */
+        .mobile-menu {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: 999;
+            background: rgba(10,10,10,0.97);
+            backdrop-filter: blur(16px);
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 2rem;
+            opacity: 0;
+            transform: translateY(-12px);
+            transition: opacity 0.25s ease, transform 0.25s ease;
+            pointer-events: none;
+        }
+
+        .mobile-menu.open {
+            display: flex;
+            opacity: 1;
+            transform: translateY(0);
+            pointer-events: all;
+        }
+
+        .mobile-menu a {
+            color: var(--text-primary);
+            text-decoration: none;
+            font-size: 1.6rem;
+            font-weight: 600;
+            transition: color 0.2s ease;
+        }
+
+        .mobile-menu a:hover {
+            color: var(--primary);
+        }
+
+        .mobile-menu .admin-login-link {
+            margin-top: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            border-radius: 999px;
+            color: #fff;
+            background: var(--primary);
+            font-size: 1.1rem;
+        }
+
+        .mobile-menu .admin-login-link:hover {
+            color: #fff;
+            background: var(--primary-dark);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .nav-links {
+                display: none;
+            }
+
+            .nav-toggle {
+                display: flex;
+            }
+
+            .hero {
+                padding: 5rem 1.5rem 3rem;
+            }
+
+            .section {
+                padding: 3rem 1.5rem;
+            }
+
+            .features-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .download-section {
+                padding: 3rem 1.5rem;
+            }
+
+            .download-info {
+                flex-direction: column;
+                gap: 1rem;
+            }
+        }
+
+        /* Animations */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .animate-fade-in {
+            animation: fadeInUp 0.6s ease forwards;
+        }
+
+        .delay-1 { animation-delay: 0.1s; }
+        .delay-2 { animation-delay: 0.2s; }
+        .delay-3 { animation-delay: 0.3s; }
+        .delay-4 { animation-delay: 0.4s; }
+
+        /* Release Block Styles */
+        .release {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+            margin-bottom: 1.5rem;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .release:hover {
+            border-color: rgba(229, 9, 20, 0.3);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 32px rgba(229, 9, 20, 0.1);
+        }
+
+        .release-inner {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .release-header {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 1.25rem 1.5rem;
+            background: linear-gradient(135deg, rgba(229, 9, 20, 0.15) 0%, rgba(229, 9, 20, 0.05) 100%);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .version-tag {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.35rem 0.75rem;
+            background: var(--primary);
+            color: white;
+            font-size: 0.8rem;
+            font-weight: 700;
+            border-radius: 6px;
+            letter-spacing: 0.5px;
+        }
+
+        .release-name {
+            flex: 1;
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            line-height: 1.4;
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.25rem 0.6rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+            border-radius: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .badge.stable {
+            background: rgba(34, 197, 94, 0.2);
+            color: #22c55e;
+            border: 1px solid rgba(34, 197, 94, 0.3);
+        }
+
+        .badge.beta {
+            background: rgba(234, 179, 8, 0.2);
+            color: #eab308;
+            border: 1px solid rgba(234, 179, 8, 0.3);
+        }
+
+        .badge.preview {
+            background: rgba(59, 130, 246, 0.2);
+            color: #3b82f6;
+            border: 1px solid rgba(59, 130, 246, 0.3);
+        }
+
+        .release-date {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            margin-left: auto;
+        }
+
+        .gh-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 0.85rem;
+            padding: 0.35rem 0.75rem;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 6px;
+            transition: all 0.2s ease;
+        }
+
+        .gh-link:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.2);
+            color: var(--text-primary);
+        }
+
+        .release-body {
+            padding: 1.5rem;
+            font-size: 0.95rem;
+            color: var(--text-secondary);
+            line-height: 1.7;
+        }
+
+        .release-body p {
+            margin-bottom: 1rem;
+        }
+
+        .release-body p:last-child {
+            margin-bottom: 0;
+        }
+
+        .release-body strong {
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+
+        .release-body code {
+            background: rgba(255, 255, 255, 0.08);
+            padding: 0.15rem 0.4rem;
+            border-radius: 4px;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.9em;
+            color: var(--primary);
+        }
+
+        .release-body ul {
+            margin: 1rem 0;
+            padding-left: 1.5rem;
+        }
+
+        .release-body li {
+            margin-bottom: 0.5rem;
+            position: relative;
+        }
+
+        .release-body li::marker {
+            color: var(--primary);
+        }
+
+        /* Responsive adjustments for release blocks */
+        @media (max-width: 768px) {
+            .release-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.5rem;
+            }
+
+            .release-date {
+                margin-left: 0;
+            }
+
+            .release-name {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+<!-- Navigation -->
+<nav class="nav" id="nav">
+    <a href="#" class="logo">
+        <div class="logo-icon">
+            <img src="https://raw.githubusercontent.com/kiduyu-klaus/KiduyuTv_final/refs/heads/main/app/src/main/res/mipmap-xxxhdpi/ic_launcher1.png"
+                 alt="KiduyuTV"
+                 style="width:100%;height:100%;object-fit:contain;border-radius:inherit;">
+        </div>
+        KiduyuTV
+    </a>
+    <ul class="nav-links">
+        <li><a href="#features">Features</a></li>
+        <li><a href="#categories">Categories</a></li>
+        <li><a href="#tech">Tech Stack</a></li>
+        <li><a href="#screenshots">Screenshots</a></li>
+        <li><a href="#changelog">Updates</a></li>
+        <li><a href="#download">Download</a></li>
+        <li><a href="/admin-panel/" class="admin-login-link">Admin Login</a></li>
+    </ul>
+    <button class="nav-toggle" id="navToggle" aria-label="Open menu" aria-expanded="false">
+        <span></span>
+        <span></span>
+        <span></span>
+    </button>
+</nav>
+
+<!-- Mobile Menu Drawer -->
+<div class="mobile-menu" id="mobileMenu">
+    <a href="#features"  class="mobile-nav-link">Features</a>
+    <a href="#categories" class="mobile-nav-link">Categories</a>
+    <a href="#tech"      class="mobile-nav-link">Tech Stack</a>
+    <a href="#screenshots" class="mobile-nav-link">Screenshots</a>
+    <a href="#changelog" class="mobile-nav-link">Updates</a>
+    <a href="#download"  class="mobile-nav-link">Download</a>
+    <a href="/admin-panel/" class="mobile-nav-link admin-login-link">Admin Login</a>
+</div>
+
+<!-- Hero Section -->
+<section class="hero">
+    <div class="hero-content">
+        <div class="hero-badge animate-fade-in">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                <polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/>
+            </svg>
+            Android TV, Fire TV & Mobile
+        </div>
+        <h1 class="hero-title animate-fade-in delay-1">KiduyuTV</h1>
+        <p class="hero-subtitle animate-fade-in delay-2">
+            A dual-platform Android streaming app with movies, TV shows, Live TV, schedule playback, watch history, Trakt profile support, Firebase sync, and TV-first remote navigation.
+        </p>
+        <div class="hero-buttons animate-fade-in delay-3">
+            <a href="#download" class="btn btn-primary">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                    <polyline points="7,10 12,15 17,10"/>
+                    <line x1="12" y1="15" x2="12" y2="3"/>
+                </svg>
+                Download APK
+            </a>
+            <a href="#features" class="btn btn-secondary">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"/>
+                    <polygon points="10,8 16,12 10,16"/>
+                </svg>
+                Explore Features
+            </a>
+        </div>
+        <div class="platforms animate-fade-in delay-4">
+            <div class="platform-item">
+                <svg viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M17.523 15.34l-.001-.006c-.003-.119-.018-.235-.052-.348-.009-.03-.023-.058-.033-.088-.02-.057-.037-.115-.064-.169a.32.32 0 0 0-.071-.109.297.297 0 0 0-.099-.075c-.016-.008-.029-.02-.046-.026a.45.45 0 0 0-.143-.03l-.04-.002a.463.463 0 0 0-.137.021.387.387 0 0 0-.129.06.335.335 0 0 0-.104.105.32.32 0 0 0-.057.157c-.007.061-.01.122-.008.184l.001.038c.003.12.018.237.053.35.01.03.023.058.033.088.02.057.038.114.064.168.012.032.032.062.055.089a.3.3 0 0 0 .098.076c.017.008.03.019.047.025a.44.44 0 0 0 .142.031l.04.002.038-.001a.43.43 0 0 0 .137-.021c.044-.015.087-.035.129-.06a.338.338 0 0 0 .104-.106.31.31 0 0 0 .056-.157c.007-.061.01-.122.008-.184l-.001-.038-.001.006zm-5.523-5.34c-2.638 0-4.78 2.142-4.78 4.78 0 2.639 2.142 4.781 4.78 4.781s4.78-2.142 4.78-4.781c0-2.638-2.142-4.78-4.78-4.78zm0 8.201c-1.885 0-3.421-1.537-3.421-3.421s1.536-3.42 3.421-3.42 3.421 1.536 3.421 3.42-1.536 3.421-3.421 3.421zm-9.447-6.2l.001.001c.075.023.15.044.227.062.04.01.081.017.122.023a3.72 3.72 0 0 0 .245.025c.086.005.172.005.259.001a5.6 5.6 0 0 0 .258-.022 3.7 3.7 0 0 0 .243-.041 3.6 3.6 0 0 0 .236-.062c.076-.023.151-.05.225-.077l.005.011c-.076.024-.15.05-.225.077l-.236.062c-.08.018-.161.031-.243.041a5.6 5.6 0 0 1-.258.022 5.4 5.4 0 0 1-.259-.001 3.8 3.8 0 0 1-.245-.025 4 4 0 0 1-.121-.023 4.4 4.4 0 0 1-.228-.062c-.071-.023-.14-.047-.208-.073-.008.017-.016.034-.025.051.069.026.137.05.208.073zm-2.552 8.37v-2.17c0-.66.54-1.2 1.2-1.2h2.17c.66 0 1.2.54 1.2 1.2v2.17c0 .66-.54 1.2-1.2 1.2H1.2c-.66 0-1.2-.54-1.2-1.2zm1.2.04h2.17c.64 0 1.16-.52 1.16-1.16v-2.17c0-.64-.52-1.16-1.16-1.16H2.4c-.64 0-1.16.52-1.16 1.16v2.17c0 .64.52 1.16 1.16 1.16zm11.4-2.17c0-.66.54-1.2 1.2-1.2h2.17c.66 0 1.2.54 1.2 1.2v2.17c0 .66-.54 1.2-1.2 1.2h-2.17c-.66 0-1.2-.54-1.2-1.2v-2.17zm1.2.04h2.17c.64 0 1.16-.52 1.16-1.16v-2.17c0-.64-.52-1.16-1.16-1.16h-2.17c-.64 0-1.16.52-1.16 1.16v2.17c0 .64.52 1.16 1.16 1.16z"/>
+                </svg>
+                Android TV
+            </div>
+            <div class="platform-item">
+                <svg viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/>
+                </svg>
+                Fire TV
+            </div>
+            <div class="platform-item">
+                <svg viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M17.6 9.48l1.84-3.18c.16-.31.04-.69-.26-.85-.29-.15-.65-.06-.83.22l-1.88 3.24c-2.86-1.21-6.08-1.21-8.94 0L5.65 5.67c-.19-.29-.51-.38-.83-.22-.31.16-.43.54-.26.85L6.4 9.48C3.3 11.25 1.28 14.44 1 18h22c-.28-3.56-2.3-6.75-5.4-8.52z"/>
+                </svg>
+                Android 7.0+
+            </div>
+            <div class="platform-item">
+                <svg viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M7 2h10a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2zm5 18a1 1 0 1 0 0-2 1 1 0 0 0 0 2z"/>
+                </svg>
+                Phone & Tablet
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Features Section -->
+<section class="section" id="features">
+    <div class="section-header">
+        <p class="section-label">Features</p>
+        <h2 class="section-title">Built for TV and Mobile</h2>
+        <p class="section-description">
+            One codebase powers TV remote navigation, mobile touch screens, streaming providers, Live TV, sync, and playback protection.
+        </p>
+    </div>
+    <div class="features-grid">
+        <div class="feature-card">
+            <div class="feature-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"/>
+                    <path d="M12 16v-4"/>
+                    <path d="M12 8h.01"/>
+                </svg>
+            </div>
+            <h3 class="feature-title">TV and Mobile Interfaces</h3>
+            <p class="feature-description">
+                Separate Compose navigation graphs provide D-pad-first Android TV and Fire TV screens plus touch-first phone and tablet layouts.
+            </p>
+        </div>
+        <div class="feature-card">
+            <div class="feature-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="2" y="7" width="20" height="15" rx="2" ry="2"/>
+                    <polyline points="17,2 12,7 7,2"/>
+                </svg>
+            </div>
+            <h3 class="feature-title">TMDB Discovery</h3>
+            <p class="feature-description">
+                Browse trending, popular, top-rated, genre, company, network, cast, season, episode, and recommendation data powered by TMDB.
+            </p>
+        </div>
+        <div class="feature-card">
+            <div class="feature-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="11" cy="11" r="8"/>
+                    <path d="M21 21l-4.35-4.35"/>
+                </svg>
+            </div>
+            <h3 class="feature-title">Search and Curated Rows</h3>
+            <p class="feature-description">
+                Search movies and TV shows, then browse curated GitHub-hosted collections such as Oscar winners, classics, sitcoms, faith content, and action lists.
+            </p>
+        </div>
+        <div class="feature-card">
+            <div class="feature-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polygon points="5,3 19,12 5,21"/>
+                </svg>
+            </div>
+            <h3 class="feature-title">WebView and IPTV Playback</h3>
+            <p class="feature-description">
+                Dedicated WebView, IPTV, schedule, and YouTube player activities handle provider iframes, M3U streams, scheduled channels, and trailers.
+            </p>
+        </div>
+        <div class="feature-card">
+            <div class="feature-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="2" y="4" width="20" height="16" rx="2"/>
+                    <path d="M6 8h.001"/>
+                    <path d="M10 8h.001"/>
+                    <path d="M14 8h.001"/>
+                    <path d="M18 8h.001"/>
+                    <path d="M8 12h.001"/>
+                    <path d="M12 12h.001"/>
+                    <path d="M16 12h.001"/>
+                    <path d="M7 16h10"/>
+                </svg>
+            </div>
+            <h3 class="feature-title">Live TV and Schedule</h3>
+            <p class="feature-description">
+                Load M3U channels, XMLTV EPG data, categories, search, favorite channels, and scheduled events with channel chips that open the schedule player.
+            </p>
+        </div>
+        <div class="feature-card">
+            <div class="feature-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 20h9"/>
+                    <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+                </svg>
+            </div>
+            <h3 class="feature-title">Watch History</h3>
+            <p class="feature-description">
+                Playback progress is saved locally, enriched with TMDB metadata, and surfaced in continue-watching rows for quick resume.
+            </p>
+        </div>
+        <div class="feature-card">
+            <div class="feature-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+                </svg>
+            </div>
+            <h3 class="feature-title">My List, Trakt and Firebase</h3>
+            <p class="feature-description">
+                Save movies, shows, companies, networks, casts, and favorite channels locally, then sync user data through Firebase and Trakt integrations.
+            </p>
+        </div>
+        <div class="feature-card">
+            <div class="feature-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="3"/>
+                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+                </svg>
+            </div>
+            <h3 class="feature-title">Ads, Consent and Protection</h3>
+            <p class="feature-description">
+                UMP consent gates StartApp, AdMob, Wortise, and Unity ads while WebView ad blocking, popup suppression, and network diagnostics protect playback.
+            </p>
+        </div>
+    </div>
+</section>
+
+<!-- Categories Section -->
+<section class="categories-section" id="categories">
+    <div class="section">
+        <div class="section-header">
+            <p class="section-label">Content Library</p>
+            <h2 class="section-title">Curated Collections and Live Areas</h2>
+            <p class="section-description">
+                Explore hand-picked movie and TV collections alongside Live TV, EPG data, scheduled events, and saved channels.
+            </p>
+        </div>
+        <div class="categories-grid">
+            <div class="category-card">
+                <div class="category-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/>
+                    </svg>
+                </div>
+                <div class="category-info">
+                    <h4>Oscar Winners 2026</h4>
+                    <p>Award-winning films</p>
+                </div>
+            </div>
+            <div class="category-card">
+                <div class="category-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+                    </svg>
+                </div>
+                <div class="category-info">
+                    <h4>Hallmark Movies</h4>
+                    <p>Heartwarming content</p>
+                </div>
+            </div>
+            <div class="category-card">
+                <div class="category-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+                    </svg>
+                </div>
+                <div class="category-info">
+                    <h4>Jason Statham</h4>
+                    <p>Action-packed blockbusters</p>
+                </div>
+            </div>
+            <div class="category-card">
+                <div class="category-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M9.59 4.59A2 2 0 1 1 11 8H2m10.59 11.41A2 2 0 1 0 14 16H2m15.73-8.27A2.5 2.5 0 1 1 19.5 12H2"/>
+                    </svg>
+                </div>
+                <div class="category-info">
+                    <h4>Best Classics</h4>
+                    <p>Timeless cinema</p>
+                </div>
+            </div>
+            <div class="category-card">
+                <div class="category-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"/>
+                        <path d="M8 14s1.5 2 4 2 4-2 4-2"/>
+                        <line x1="9" y1="9" x2="9.01" y2="9"/>
+                        <line x1="15" y1="9" x2="15.01" y2="9"/>
+                    </svg>
+                </div>
+                <div class="category-info">
+                    <h4>Best Sitcoms</h4>
+                    <p>Beloved comedy series</p>
+                </div>
+            </div>
+            <div class="category-card">
+                <div class="category-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"/>
+                        <line x1="12" y1="16" x2="12" y2="12"/>
+                        <line x1="12" y1="8" x2="12.01" y2="8"/>
+                    </svg>
+                </div>
+                <div class="category-info">
+                    <h4>Spy Thrillers</h4>
+                    <p>CIA, Mossad, espionage</p>
+                </div>
+            </div>
+            <div class="category-card">
+                <div class="category-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                        <polyline points="14,2 14,8 20,8"/>
+                        <line x1="16" y1="13" x2="8" y2="13"/>
+                        <line x1="16" y1="17" x2="8" y2="17"/>
+                        <polyline points="10,9 9,9 8,9"/>
+                    </svg>
+                </div>
+                <div class="category-info">
+                    <h4>True Stories</h4>
+                    <p>Real event documentaries</p>
+                </div>
+            </div>
+            <div class="category-card">
+                <div class="category-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"/>
+                        <polyline points="12,6 12,12 16,14"/>
+                    </svg>
+                </div>
+                <div class="category-info">
+                    <h4>Time Travel</h4>
+                    <p>Sci-fi adventures</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Tech Stack Section -->
+<section class="section" id="tech">
+    <div class="section-header">
+        <p class="section-label">Technology</p>
+        <h2 class="section-title">Built with Modern Tools</h2>
+        <p class="section-description">
+            The current implementation combines modern Android UI, Room caching, Firebase/Trakt sync, WebView playback, IPTV parsing, and multi-network ads.
+        </p>
+    </div>
+    <div class="tech-grid">
+        <div class="tech-item">
+            <div class="tech-name">Kotlin Plugin</div>
+            <div class="tech-version">2.1.10</div>
+        </div>
+        <div class="tech-item">
+            <div class="tech-name">Jetpack Compose</div>
+            <div class="tech-version">BOM 2024.12</div>
+        </div>
+        <div class="tech-item">
+            <div class="tech-name">Android Gradle</div>
+            <div class="tech-version">8.13.2</div>
+        </div>
+        <div class="tech-item">
+            <div class="tech-name">Navigation</div>
+            <div class="tech-version">2.8.5</div>
+        </div>
+        <div class="tech-item">
+            <div class="tech-name">Retrofit</div>
+            <div class="tech-version">2.11.0</div>
+        </div>
+        <div class="tech-item">
+            <div class="tech-name">Room</div>
+            <div class="tech-version">2.6.1</div>
+        </div>
+        <div class="tech-item">
+            <div class="tech-name">Firebase</div>
+            <div class="tech-version">Auth + DB</div>
+        </div>
+        <div class="tech-item">
+            <div class="tech-name">Ads</div>
+            <div class="tech-version">StartApp First</div>
+        </div>
+        <div class="tech-item">
+            <div class="tech-name">Jsoup</div>
+            <div class="tech-version">1.18.1</div>
+        </div>
+        <div class="tech-item">
+            <div class="tech-name">Media3</div>
+            <div class="tech-version">1.5.1</div>
+        </div>
+    </div>
+</section>
+
+<!-- Screenshots Section -->
+<section class="section" id="screenshots">
+    <div class="section-header">
+        <p class="section-label">Preview</p>
+        <h2 class="section-title">Screenshots</h2>
+        <p class="section-description">
+            A glimpse of the immersive streaming experience awaiting you.
+        </p>
+    </div>
+    <div class="screenshots-grid">
+        <div class="screenshot-card" onclick="openModal(this)">
+            <img src="https://raw.githubusercontent.com/kiduyu-klaus/KiduyuTv_final/refs/heads/main/homescreen.png"
+                 alt="Home Screen"
+                 class="screenshot-placeholder"
+                 style="object-fit:cover;width:100%;border-radius:inherit;">
+            <div class="screenshot-zoom-hint">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                    <line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/>
+                </svg>
+            </div>
+            <div class="screenshot-info">
+                <h4 class="screenshot-title">Home Screen</h4>
+                <p class="screenshot-desc">Browse curated content with hero carousel</p>
+            </div>
+        </div>
+        <div class="screenshot-card" onclick="openModal(this)">
+            <img src="https://raw.githubusercontent.com/kiduyu-klaus/KiduyuTv_final/refs/heads/main/details.png"
+                 alt="Detail View"
+                 class="screenshot-placeholder"
+                 style="object-fit:cover;width:100%;border-radius:inherit;">
+            <div class="screenshot-zoom-hint">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                    <line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/>
+                </svg>
+            </div>
+            <div class="screenshot-info">
+                <h4 class="screenshot-title">Detail View</h4>
+                <p class="screenshot-desc">Comprehensive movie and show information</p>
+            </div>
+        </div>
+        <div class="screenshot-card" onclick="openModal(this)">
+            <img src="https://raw.githubusercontent.com/kiduyu-klaus/KiduyuTv_final/refs/heads/main/rows.png"
+                 alt="Detail View"
+                 class="screenshot-placeholder"
+                 style="object-fit:cover;width:100%;border-radius:inherit;">
+            <div class="screenshot-zoom-hint">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                    <line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/>
+                </svg>
+            </div>
+            <div class="screenshot-info">
+                <h4 class="screenshot-title">Content Rows</h4>
+                <p class="screenshot-desc">Horizontal scrolling with smooth navigation</p>
+            </div>
+        </div>
+    </div>
+
+</section>
+
+<!-- Changelog Section -->
+<section class="section" id="changelog">
+    <div class="section-header">
+        <p class="section-label">Updates</p>
+        <h2 class="section-title">Current Implementation</h2>
+        <p class="section-description">
+            A concise snapshot of the major features and systems currently implemented in KiduyuTV.
+        </p>
+    </div>
+    <div class="changelog-section">
+        <div class="changelog-content">================================================================================
+            KIDUYU TV - VERSION 1.1.71
+            CURRENT IMPLEMENTATION SNAPSHOT
+            ================================================================================
+
+            PLATFORM
+            ================================================================================
+
+            - One Android app module with phone and tv product flavors
+            - Android TV and Fire TV UI uses D-pad-first Compose navigation
+            - Phone and tablet UI uses dedicated mobile Compose screens
+            - MainActivity selects the correct navigation graph at runtime
+
+            CONTENT AND DISCOVERY
+            ================================================================================
+
+            - TMDB-powered home, movie, TV, search, detail, season, episode, cast,
+              company, network, genre, and recommendation flows
+            - GitHub-hosted curated lists for Oscar winners, classics, sitcoms,
+              faith content, true stories, spy thrillers, action collections, and more
+            - My List, continue watching, watch history, and metadata enrichment
+
+            LIVE TV AND SCHEDULE
+            ================================================================================
+
+            - M3U playlist loading and six-hour cache
+            - XMLTV EPG loading and channel program matching
+            - Live TV category browsing, search, playback, and favorite channels
+            - Schedule tab with expandable events and selectable available channels
+            - SchedulePlayerActivity fetches watch pages, exposes server switching,
+              uses AdBlockerWebViewClient, and injects autoplay/unmute support
+
+            PLAYBACK
+            ================================================================================
+
+            - WebView player for movie and TV provider iframes
+            - IPTV player for Live TV channels
+            - Schedule player for scheduled channels
+            - YouTube player activity for trailers/videos
+            - TV cursor overlay for WebView navigation on TV and Fire TV devices
+            - Watch progress updates and resume support
+
+            SYNC AND ACCOUNTS
+            ================================================================================
+
+            - Room database for saved media, watch history, cached rows, detail cache,
+              and genres
+            - Firebase Auth, Analytics, Realtime Database, Firestore dependency support,
+              and Messaging dependency support
+            - FirebaseSyncManager syncs My List, companies, networks, casts, watch
+              history, favorite channels, and default provider
+            - Trakt OAuth, token refresh, profile, history, collection, watchlist,
+              recommendations, and scrobbling helpers
+
+            ADS AND PROTECTION
+            ================================================================================
+
+            - UMP consent gates ad SDK initialization
+            - Core ad priority: StartApp -> AdMob -> Wortise -> Unity
+            - Supports banners, interstitials, rewarded ads, StartApp splash helper,
+              and Wortise app-open ads
+            - WebView ad blocking, popup suppression, EasyList/EasyPrivacy assets,
+              filter updates, and network-level diagnostics
+            - Connectivity monitoring includes reachability, DNS, VPN, proxy, metered
+              network, and network-state dialogs
+
+            COMPATIBILITY
+            ================================================================================
+
+            - Minimum Android SDK: 24
+            - Target Android SDK: 35
+            - Compile SDK: 35
+            - Version code: 4
+            - Version name: 1.1.71
+
+            ================================================================================
+            © 2026 Kiduyu Klaus. All rights reserved.
+            ================================================================================</div>
+    </div>
+</section>
+
+<!-- Download Section -->
+<section class="download-section" id="download">
+    <h2 class="download-title">Download KiduyuTV</h2>
+    <p class="download-description">
+        Get KiduyuTV for Android TV, Fire TV, phone, or tablet. Choose the flavor that matches your device.
+    </p>
+    <div class="download-buttons">
+        <a id="download-tv" href="#" class="btn btn-primary" target="_blank" rel="noopener noreferrer" download>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="7,10 12,15 17,10"/>
+                <line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+            Download for Android TV / Fire TV
+        </a>
+        <a id="download-mobile" href="#" class="btn btn-primary" target="_blank" rel="noopener noreferrer" download>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="7,10 12,15 17,10"/>
+                <line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+            Download for Mobile
+        </a>
+        <a href="https://github.com/kiduyu-klaus/KiduyuTv_final" class="btn btn-secondary" target="_blank" rel="noopener noreferrer">
+            <svg viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+            </svg>
+            View on GitHub
+        </a>
+    </div>
+    <div class="download-info">
+        <div class="download-info-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+            </svg>
+            Safe & Secure
+        </div>
+        <div class="download-info-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="7,10 12,15 17,10"/>
+                <line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+            Free Download
+        </div>
+        <div class="download-info-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                <line x1="16" y1="2" x2="16" y2="6"/>
+                <line x1="8" y1="2" x2="8" y2="6"/>
+                <line x1="3" y1="10" x2="21" y2="10"/>
+            </svg>
+            Regular Updates
+        </div>
+    </div>
+</section>
+
+<!-- Footer -->
+<footer class="footer">
+    <div class="footer-content">
+        <div class="footer-logo">
+            <div class="logo-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                    <rect x="2" y="7" width="20" height="15" rx="2" ry="2"/>
+                    <polyline points="17,2 12,7 7,2"/>
+                </svg>
+            </div>
+            KiduyuTV
+        </div>
+        <p class="footer-text">
+            A dual-form-factor streaming application for Android TV, Fire TV, phones, and tablets.
+        </p>
+        <div class="footer-links">
+            <a href="https://github.com/kiduyu-klaus/KiduyuTv_final" target="_blank" rel="noopener noreferrer">GitHub</a>
+            <a href="https://github.com/kiduyu-klaus/KiduyuTv_final/releases" target="_blank" rel="noopener noreferrer">Releases</a>
+            <a href="https://www.themoviedb.org/" target="_blank" rel="noopener noreferrer">TMDB API</a>
+            <a href="privacy.html">Privacy Policy</a>
+            <a href="https://github.com/kiduyu-klaus/KiduyuTv_final/blob/main/LICENSE" target="_blank" rel="noopener noreferrer">License</a>
+        </div>
+        <p class="footer-copyright">
+            Proprietary software. All rights reserved.
+        </p>
+    </div>
+</footer>
+
+<!-- Image Modal -->
+<div class="img-modal-overlay" id="imgModal" onclick="closeModal(event)">
+    <button class="img-modal-close" onclick="closeModal(event)" aria-label="Close">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"/>
+            <line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+    </button>
+    <div class="img-modal-inner" onclick="event.stopPropagation()">
+        <img class="img-modal-img" id="imgModalImg" src="" alt="">
+        <p class="img-modal-caption" id="imgModalCaption"></p>
+    </div>
+</div>
+
+<script>
+    function openModal(card) {
+        const img = card.querySelector('img');
+        const title = card.querySelector('.screenshot-title');
+        document.getElementById('imgModalImg').src = img.src;
+        document.getElementById('imgModalImg').alt = img.alt;
+        document.getElementById('imgModalCaption').textContent = title ? title.textContent : '';
+        document.getElementById('imgModal').classList.add('active');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeModal(e) {
+        if (e.target.closest('.img-modal-inner') && !e.target.closest('.img-modal-close')) return;
+        document.getElementById('imgModal').classList.remove('active');
+        document.body.style.overflow = '';
+    }
+
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            document.getElementById('imgModal').classList.remove('active');
+            document.body.style.overflow = '';
+        }
+    });
+
+    // Hamburger menu
+    const navToggle = document.getElementById('navToggle');
+    const mobileMenu = document.getElementById('mobileMenu');
+
+    function toggleMenu(open) {
+        navToggle.classList.toggle('open', open);
+        navToggle.setAttribute('aria-expanded', open);
+        if (open) {
+            mobileMenu.style.display = 'flex';
+            requestAnimationFrame(() => mobileMenu.classList.add('open'));
+            document.body.style.overflow = 'hidden';
+        } else {
+            mobileMenu.classList.remove('open');
+            document.body.style.overflow = '';
+            setTimeout(() => { if (!mobileMenu.classList.contains('open')) mobileMenu.style.display = 'none'; }, 260);
+        }
+    }
+
+    navToggle.addEventListener('click', () => toggleMenu(!navToggle.classList.contains('open')));
+
+    document.querySelectorAll('.mobile-nav-link').forEach(link => {
+        link.addEventListener('click', () => toggleMenu(false));
+    });
+
+    // Navigation scroll effect
+    const nav = document.getElementById('nav');
+    window.addEventListener('scroll', () => {
+        if (window.scrollY > 50) {
+            nav.classList.add('scrolled');
+        } else {
+            nav.classList.remove('scrolled');
+        }
+    });
+
+    // Smooth scroll for anchor links
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener('click', function (e) {
+            e.preventDefault();
+            const target = document.querySelector(this.getAttribute('href'));
+            if (target) {
+                target.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'start'
+                });
+            }
+        });
+    });
+
+    // Intersection Observer for animations
+    const observerOptions = {
+        threshold: 0.1,
+        rootMargin: '0px 0px -50px 0px'
+    };
+
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.style.opacity = '1';
+                entry.target.style.transform = 'translateY(0)';
+            }
+        });
+    }, observerOptions);
+
+    document.querySelectorAll('.feature-card, .category-card, .tech-item, .screenshot-card').forEach(el => {
+        el.style.opacity = '0';
+        el.style.transform = 'translateY(20px)';
+        el.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+        observer.observe(el);
+    });
+</script>
+</body>
+</html>

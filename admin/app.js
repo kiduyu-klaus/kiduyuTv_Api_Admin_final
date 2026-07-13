@@ -1952,6 +1952,12 @@ function setEmailConfigLoading(loading) {
   const saveButton = document.getElementById('saveEmailConfig');
   if (reloadButton) reloadButton.disabled = loading;
   if (saveButton) saveButton.disabled = loading;
+  for (const field of EMAIL_CONFIG_FIELDS) {
+    const input = document.getElementById(field.id);
+    if (input) input.disabled = loading;
+  }
+  const password = document.getElementById('emailConfigSmtpPass');
+  if (password) password.disabled = loading;
 }
 
 function applyEmailConfig(config) {

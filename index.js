@@ -1,4 +1,5 @@
-require('dotenv').config();
+const dotenv = require('dotenv');
+dotenv.config();
 const express = require('express');
 const path = require('path');
 const fs = require('fs');
@@ -56,6 +57,21 @@ app.get('/ic_banner.png', (req, res) => {
   res.set('Cache-Control', 'public, max-age=86400');
   res.sendFile(path.join(__dirname, 'ic_banner.png'));
 });
+
+const publicIndexFile = path.join(__dirname, 'public', 'index.html');
+
+function sendPublicLandingPage(req, res) {
+  res.set('Cache-Control', 'no-store');
+  res.sendFile(publicIndexFile);
+}
+
+// Public KiduyuTV landing page and companion pages.
+app.get('/', sendPublicLandingPage);
+app.get(['/api', '/api/', '/api/index.html'], sendPublicLandingPage);
+app.get('/api/privacy.html', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'privacy.html'));
+});
+app.use(express.static(path.join(__dirname, 'public')));
 
 // ── ROUTER ───────────────────────────────────────────────────────
 
@@ -153,11 +169,17 @@ const EMAIL_CONFIG_PUBLIC_KEYS = [
 ];
 
 function getEmailConfigForAdmin() {
+  let fileConfig = {};
+  if (fs.existsSync(ENV_FILE)) {
+    fileConfig = dotenv.parse(fs.readFileSync(ENV_FILE, 'utf8'));
+  }
+
   const config = {};
   for (const key of EMAIL_CONFIG_PUBLIC_KEYS) {
-    config[key] = process.env[key] || '';
+    config[key] = fileConfig[key] !== undefined ? fileConfig[key] : (process.env[key] || '');
   }
-  config.SMTP_PASS_CONFIGURED = !!process.env.SMTP_PASS;
+  const smtpPassword = fileConfig.SMTP_PASS !== undefined ? fileConfig.SMTP_PASS : process.env.SMTP_PASS;
+  config.SMTP_PASS_CONFIGURED = !!smtpPassword;
   return config;
 }
 
@@ -686,6 +708,7 @@ router.post('/admin/verify', async (req, res) => {
 router.get('/admin/email/config', async (req, res) => {
   try {
     await verifyAdminToken(req.query.idToken);
+    res.set('Cache-Control', 'no-store');
     return res.json({ success: true, config: getEmailConfigForAdmin() });
   } catch (err) {
     log('error', err.message, { endpoint: '/api/admin/email/config', stack: err.stack });
@@ -1967,7 +1990,7 @@ app.get('/getHomeDialogMessage', async (req, res) => {
 // ── MOUNT ROUTER UNDER /api ───────────────────────────────────────
 
 app.use('/api', router);
-app.use('/api', express.static(path.join(__dirname, 'admin')));
+app.use('/admin-panel', express.static(path.join(__dirname, 'admin')));
 // ── START SERVER ──────────────────────────────────────────────────
 
 const PORT = process.env.PORT || 3000;
