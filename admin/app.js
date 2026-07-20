@@ -1563,6 +1563,37 @@ function resetAppUpdateGithubLinkControl({ restoreManual = false, statusMessage 
   );
 }
 
+function buildAppUpdateMessage(apkLinks) {
+  const tag = apkLinks?.tagName || 'latest';
+  const shortSha = apkLinks?.commitShortSha || '';
+  const branch = apkLinks?.branch || 'main';
+
+  // Strip anything from `### Downloads` onward in the release-notes fallback.
+  // Auto-generated release bodies always end with a Downloads section that
+  // duplicates the APK URLs we already wire into download_link_phone / _tv.
+  let notesBody = typeof apkLinks?.releaseNotes === 'string' ? apkLinks.releaseNotes : '';
+  const downloadsIdx = notesBody.search(/^###\s+Downloads?/im);
+  if (downloadsIdx >= 0) notesBody = notesBody.slice(0, downloadsIdx).trimEnd();
+
+  // Prefer the actual commit message (subject + body) when we have it,
+  // otherwise fall back to the cleaned release notes.
+  const body = (apkLinks?.commitMessage || notesBody || '').trim();
+
+  const parts = [
+    `## KiduyuTV ${tag}`,
+    '',
+    `**Commit:** \`${shortSha}\``,
+    '',
+    `**Branch:** \`${branch}\``,
+    '',
+    '---',
+    ''
+  ];
+  if (body) parts.push(body);
+
+  return parts.join('\n');
+}
+
 async function handleAppUpdateGithubLinksToggle(event) {
   const toggle = event.target;
   const versionInput = document.getElementById('appUpdateVersion');
@@ -1598,8 +1629,7 @@ async function handleAppUpdateGithubLinksToggle(event) {
 
     const version = String(apkLinks.tagName).replace(/^v(?=\d)/i, '');
     const title = apkLinks.releaseName || `Update to ${apkLinks.tagName}`;
-    const message = apkLinks.releaseNotes ||
-      `A new KiduyuTV update (${apkLinks.tagName}) is available. Download and install the latest version.`;
+    const message = buildAppUpdateMessage(apkLinks);
 
     latestApkLinks = apkLinks;
     if (versionInput) versionInput.value = version;

@@ -347,13 +347,33 @@ function pickApkAsset(assets, platform) {
   return assets.find(asset => pattern.test(String(asset.name || '')));
 }
 
+function getGithubCommitsApiUrl(releasesApiUrl, ref) {
+  return String(releasesApiUrl || '')
+    .replace(/\/releases\/[^/]*\/?$/, '/commits/' + encodeURIComponent(ref));
+}
+
+async function fetchLatestCommit(releasesApiUrl, ref) {
+  if (!releasesApiUrl || !ref) return { sha: '', shortSha: '', message: '' };
+  try {
+    const commit = await fetchJson(getGithubCommitsApiUrl(releasesApiUrl, ref));
+    const sha = typeof commit?.sha === 'string' ? commit.sha : '';
+    const message = typeof commit?.commit?.message === 'string'
+      ? commit.commit.message.trim()
+      : '';
+    return { sha, shortSha: sha.slice(0, 7), message };
+  } catch (_) {
+    return { sha: '', shortSha: '', message: '' };
+  }
+}
+
 async function getLatestApkLinks({ forceRefresh = false } = {}) {
   const now = Date.now();
   if (!forceRefresh && latestApkLinksCache && latestApkLinksCache.expiresAt > now) {
     return latestApkLinksCache.value;
   }
 
-  const release = await fetchJson(process.env.GITHUB_RELEASES_API_URL || GITHUB_RELEASES_API_URL);
+  const releasesApiUrl = process.env.GITHUB_RELEASES_API_URL || GITHUB_RELEASES_API_URL;
+  const release = await fetchJson(releasesApiUrl);
   const assets = Array.isArray(release.assets) ? release.assets : [];
   const phone = pickApkAsset(assets, 'phone');
   const tv = pickApkAsset(assets, 'tv');
@@ -362,11 +382,22 @@ async function getLatestApkLinks({ forceRefresh = false } = {}) {
     throw createHttpError(502, 'Latest GitHub release does not contain both phone and TV APK assets.');
   }
 
+  const branch = typeof release.target_commitish === 'string' && release.target_commitish
+    ? release.target_commitish
+    : '';
+  // Look up the latest commit on the release branch (or tag) so admins can
+  // surface the short SHA + commit message in the App Update panel.
+  const commit = await fetchLatestCommit(releasesApiUrl, branch || release.tag_name);
+
   const value = {
     tagName: release.tag_name || '',
     releaseName: release.name || release.tag_name || 'Latest release',
     releaseNotes: typeof release.body === 'string' ? release.body.trim() : '',
     releaseUrl: release.html_url || 'https://github.com/kiduyu-klaus/KiduyuTv_final/releases/latest',
+    branch,
+    commitSha: commit.sha,
+    commitShortSha: commit.shortSha,
+    commitMessage: commit.message,
     phone: {
       name: phone.name,
       url: phone.browser_download_url

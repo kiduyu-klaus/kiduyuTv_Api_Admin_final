@@ -633,3 +633,30 @@
 [2026-07-13T19:20:12.709Z] [INFO] GET /admin/users → 200 (7051ms)
 [2026-07-13T19:20:14.863Z] [INFO] admin/users listed {"count":132,"page":1,"search":""}
 [2026-07-13T19:20:14.868Z] [INFO] GET /admin/users → 304 (2033ms)
+[2026-07-13T19:35:39.278Z] [INFO] Health check
+[2026-07-13T19:35:39.284Z] [INFO] GET /health → 200 (45ms)
+[2026-07-13T19:35:39.902Z] [INFO] admin/config fetched {"section":"ads"}
+[2026-07-13T19:35:39.906Z] [INFO] GET /admin/config/ads → 304 (660ms)
+[2026-07-13T19:35:39.910Z] [INFO] admin/config fetched {"section":"network"}
+[2026-07-13T19:35:39.923Z] [INFO] GET /admin/config/network → 200 (647ms)
+[2026-07-13T19:35:39.997Z] [INFO] admin/config fetched {"section":"filters"}
+[2026-07-13T19:35:40.031Z] [INFO] GET /admin/config/filters → 200 (517ms)
+[2026-07-13T19:35:40.280Z] [INFO] admin/config fetched {"section":"features"}
+[2026-07-13T19:35:40.362Z] [INFO] GET /admin/config/features → 200 (842ms)
+[2026-07-13T19:35:40.375Z] [INFO] config section initialised with defaults {"path":"app_config/playlist_url","missingKeys":["createdAt"]}
+[2026-07-13T19:35:40.380Z] [INFO] admin/config fetched {"section":"streaming"}
+[2026-07-13T19:35:40.384Z] [INFO] GET /admin/config/streaming → 200 (1141ms)
+[2026-07-13T19:35:40.387Z] [INFO] config section initialised with defaults {"path":"app_config/api_Configuration","missingKeys":["tmdb_bearer_token","trakt_client_id","trakt_client_secret"]}
+[2026-07-13T19:35:40.390Z] [INFO] admin/config fetched {"section":"api"}
+[2026-07-13T19:35:40.393Z] [INFO] GET /admin/config/api → 200 (1149ms)
+[2026-07-13T19:35:40.842Z] [INFO] admin/config fetched {"section":"app_update"}
+[2026-07-13T19:35:40.844Z] [INFO] GET /admin/config/app_update → 200 (347ms)
+[2026-07-13T19:35:40.909Z] [INFO] admin/config fetched {"section":"app_packagenames"}
+[2026-07-13T19:35:40.929Z] [INFO] GET /admin/config/app_packagenames → 200 (418ms)
+[2026-07-13T19:35:40.979Z] [INFO] admin/config fetched {"section":"home_dialog"}
+[2026-07-13T19:35:41.062Z] [INFO] GET /admin/config/home_dialog → 200 (549ms)
+[2026-07-13T19:35:41.537Z] [INFO] providers updated with missing/default fields
+[2026-07-13T19:35:42.047Z] [INFO] admin/providers fetched
+[2026-07-13T19:35:42.344Z] [INFO] GET /admin/providers → 200 (1829ms)
+[2026-07-13T19:36:21.780Z] [INFO] admin/email/latest-apks fetched {"tagName":"v1.1.506"}
+[2026-07-13T19:36:21.803Z] [INFO] GET /admin/email/latest-apks → 200 (29122ms)
